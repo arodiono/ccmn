@@ -18,10 +18,15 @@ const router = new VueRouter({
 })
 
 new Vue({
+  el: '#app',
   router,
   render: h => h(App),
   data: {
-    siteId: String
+    siteId: '',
+    date: function () {
+      let now = new Date()
+      return now.getFullYear() + '-' + now.getMonth() + '-' + now.getDate()
+    }
   },
   created() {
     this.getSites()
@@ -33,8 +38,8 @@ new Vue({
           this.siteId = response.data[0].aesUId
         })
         .catch(e => {
-          alert(e)
+          console.dir(e) // eslint-disable-line no-console
         })
     }
   }
-}).$mount('#app')
+})

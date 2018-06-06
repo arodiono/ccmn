@@ -1,9 +1,3 @@
-<template>
-    <div id="visitors">
-
-    </div>
-</template>
-
 <script>
   import { Line } from 'vue-chartjs'
   import { HTTP } from '../http'
@@ -12,11 +6,34 @@
     extends: Line,
     data: () => ({
       labels: [],
-      values: []
+      values: [],
+
     }),
+    computed: {
+      chartData: function () {
+        return {
+          labels: this.labels,
+          datasets: [
+            {
+              label: 'Users',
+              backgroundColor: 'rgba(0, 123, 255, 0.5)',
+              borderColor: '#007bff',
+              data: this.values
+            }
+          ]
+        }
+      },
+      chartOptions: function () {
+        return {
+          title: {
+            display: true,
+            text: 'Connected visitors today until now'
+          }
+        }
+      }
+    },
     created: function () {
-      const id = this.$root.siteId()
-      HTTP.get('/presence/v1/connected/hourly/today?siteId=' + id)
+      HTTP.get('/presence/v1/connected/hourly/today?siteId=' + this.$root.siteId)
         .then(response => {
           for (let key in response.data) {
             if (response.data.hasOwnProperty(key)) {
@@ -25,23 +42,9 @@
             }
           }
         })
-    },
-    mounted () {
-      console.log(this.labels, this.values)
-      this.renderChart({
-        labels: this.labels,
-        datasets: [
-          {
-            label: 'GitHub Commits',
-            backgroundColor: '#f87979',
-            data: this.values
-          }
-        ]
-      })
+        .then(() => {
+          this.renderChart(this.chartData, this.chartOptions)
+        })
     }
   }
 </script>
-
-<style>
-
-</style>
