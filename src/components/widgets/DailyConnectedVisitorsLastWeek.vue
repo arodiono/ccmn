@@ -1,6 +1,6 @@
 <script>
   import { Line } from 'vue-chartjs'
-  import { HTTP } from '../http'
+  import { HTTP } from '../../http'
 
   export default {
     extends: Line,
@@ -27,13 +27,13 @@
         return {
           title: {
             display: true,
-            text: 'Connected visitors today until now'
+            text: 'Daily count of connected visitors for the last 7 days'
           }
         }
       }
     },
     created: function () {
-      HTTP.get('/presence/v1/connected/hourly/today?siteId=' + this.$root.siteId)
+      HTTP.get('/presence/v1/connected/daily/lastweek?siteId=' + this.$root.siteId)
         .then(response => {
           for (let key in response.data) {
             if (response.data.hasOwnProperty(key)) {
