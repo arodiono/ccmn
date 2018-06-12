@@ -13,22 +13,30 @@
         </div>
         <b-card-group deck class="mb-3">
             <b-card header="Total Visitors" class="text-center" bg-variant="success" text-variant="white">
-                <p class="card-text">{{ summary.totalVisitorCount }}</p>
+                <p class="card-text">{{ totalVisitors }}</p>
             </b-card>
             <b-card header="Average Dwell Time" class="text-center" bg-variant="danger" text-variant="white">
-                <p class="card-text">{{ Math.round(summary.averageDwell) }} mins</p>
+                <p class="card-text">{{ dwellTime }}</p>
             </b-card>
             <b-card header="Peak Hour" class="text-center" bg-variant="primary" text-variant="white">
-                <p class="card-text">{{ summary.peakSummary.peakHour }}:00 - {{ summary.peakSummary.peakHour + 1}}:00 </p>
+                <p class="card-text">{{ peakHour }}</p>
             </b-card>
             <b-card header="Conversion Rate" class="text-center" bg-variant="warning" text-variant="white">
-                <p class="card-text">{{ summary.conversionRate }}%</p>
+                <p class="card-text">{{ conversionRate }}</p>
             </b-card>
             <b-card header="Top Device Maker" class="text-center" bg-variant="info" text-variant="white">
-                <p class="card-text">{{ summary.topManufacturers.name }}</p>
+                <p class="card-text">{{ topDevice }}</p>
             </b-card>
         </b-card-group>
-        <hourly-connected-visitors v-bind:interval="interval" v-bind:site="site"></hourly-connected-visitors>
+        <b-row>
+        <b-col cols="6">
+            <!--<hourly-connected-visitors v-bind:interval="interval" v-bind:site="site"></hourly-connected-visitors>-->
+        </b-col>
+        <b-col cols="6">
+            <proximity v-bind:interval="interval" v-bind:site="site"></proximity>
+        </b-col>
+        </b-row>
+
     </div>
 </template>
 
@@ -37,11 +45,13 @@
 <script>
     import {HTTP} from './../http'
     import HourlyConnectedVisitors from './widgets/HourlyConnectedVisitors.vue'
+    import Proximity from './widgets/Proximity.vue'
 
     export default {
         name: 'dashboard',
         components: {
-            HourlyConnectedVisitors
+            HourlyConnectedVisitors,
+            Proximity
         },
         data() {
             return {
@@ -54,7 +64,12 @@
                 ],
                 site: '',
                 sitesOptions: [],
-                summary: {}
+                totalVisitors: 'n/a',
+                dwellTime: 'n/a',
+                peakHour: 'n/a',
+                conversionRate: 'n/a',
+                topDevice: 'n/a',
+
             }
         },
         watch: {
@@ -83,9 +98,14 @@
         },
         methods: {
             getSummary: function () {
+                let self = this
                 HTTP.get('/presence/v1/kpisummary/' + this.interval + '?siteId=' + this.site)
                     .then(response => {
-                        this.summary = response.data
+                        self.totalVisitors = response.data.totalVisitorCount
+                        self.dwellTime = Math.round(response.data.averageDwell) + ' mins'
+                        self.conversionRate = response.data.conversionRate + '%'
+                        self.peakHour = (response.data.peakSummary.peakHour + ':00') + '-' + (response.data.peakSummary.peakHour + 1) + ':00'
+                        self.topDevice = response.data.topManufacturers.name
                     })
             }
         }

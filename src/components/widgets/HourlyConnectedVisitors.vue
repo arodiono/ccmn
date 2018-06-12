@@ -48,6 +48,8 @@
             getVisits: function () {
                 HTTP.get('/presence/v1/connected/hourly/' + this.interval + '?siteId=' + this.site)
                     .then(response => {
+                        this.labels = []
+                        this.values = []
                         for (let key in response.data) {
                             if (response.data.hasOwnProperty(key)) {
                                 this.labels.push(key)
