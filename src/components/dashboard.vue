@@ -32,7 +32,7 @@
         <b-col cols="6">
             <!--<hourly-connected-visitors v-bind:interval="interval" v-bind:site="site"></hourly-connected-visitors>-->
         </b-col>
-        <b-col cols="6">
+        <b-col cols="10">
             <proximity v-bind:interval="interval" v-bind:site="site"></proximity>
         </b-col>
         </b-row>
