@@ -1,9 +1,20 @@
+<template>
+    <bar-chart
+            :chart-data="chartData"
+            :options="chartOptions"
+            :height="400"
+    >
+    </bar-chart>
+</template>
+
 <script>
-    import {Bar} from 'vue-chartjs'
+    import BarChart from '../charts/BarChart'
     import {HTTP} from '../../http'
 
     export default {
-        extends: Bar,
+        components: {
+            BarChart
+        },
         data: () => ({
             passerby: {
                 labels: [],
@@ -24,24 +35,17 @@
                 await this.getPasserby()
                 await this.getVisitors()
                 await this.getConnected()
-                await this.renderChart(this.chartData, this.chartOptions)
-
             },
             interval: async function () {
                 await this.getPasserby()
                 await this.getVisitors()
                 await this.getConnected()
-                await this.renderChart(this.chartData, this.chartOptions)
-
             }
-        },
-        mounted() {
-            console.dir(this)
         },
         computed: {
             chartData: function () {
                 return {
-                    labels: this.visitors.labels,
+                    labels: this.passerby.labels,
                     datasets: [
                         {
                             label: 'Passerby',
@@ -66,6 +70,7 @@
             },
             chartOptions: function () {
                 return {
+                    maintainAspectRatio: false,
                     title: {
                         display: true,
                         text: 'Proximity'
@@ -81,7 +86,7 @@
                         this.passerby.values.length = 0
                         for (let key in response.data) {
                             if (response.data.hasOwnProperty(key)) {
-                                this.passerby.labels.push(key)
+                                this.passerby.labels.push(key + ':00')
                                 this.passerby.values.push(response.data[key])
                             }
                         }
@@ -90,11 +95,9 @@
             getVisitors: async function () {
                 await HTTP.get('/presence/v1/visitor/hourly/' + this.interval + '?siteId=' + this.site)
                     .then(response => {
-                        this.visitors.labels.length = 0
                         this.visitors.values.length = 0
                         for (let key in response.data) {
                             if (response.data.hasOwnProperty(key)) {
-                                this.visitors.labels.push(key)
                                 this.visitors.values.push(response.data[key])
                             }
                         }
@@ -103,11 +106,9 @@
             getConnected: async function () {
                 await HTTP.get('/presence/v1/connected/hourly/' + this.interval + '?siteId=' + this.site)
                     .then(response => {
-                        this.connected.labels.length = 0
                         this.connected.values.length = 0
                         for (let key in response.data) {
                             if (response.data.hasOwnProperty(key)) {
-                                this.connected.labels.push(key)
                                 this.connected.values.push(response.data[key])
                             }
                         }

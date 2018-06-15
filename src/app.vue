@@ -11,7 +11,9 @@
             <div class="row">
                 <sidebar></sidebar>
                 <main role="main" class="col-md-9 ml-sm-auto col-lg-10 px-4">
-                    <router-view></router-view>
+                    <transition name="fade">
+                        <router-view></router-view>
+                    </transition>
                 </main>
             </div>
         </b-container>

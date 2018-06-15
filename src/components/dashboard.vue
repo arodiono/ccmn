@@ -28,30 +28,52 @@
                 <p class="card-text">{{ topDevice }}</p>
             </b-card>
         </b-card-group>
-        <b-row>
-        <b-col cols="6">
-            <!--<hourly-connected-visitors v-bind:interval="interval" v-bind:site="site"></hourly-connected-visitors>-->
-        </b-col>
-        <b-col cols="10">
-            <proximity v-bind:interval="interval" v-bind:site="site"></proximity>
-        </b-col>
+        <b-row class="mt-5">
+            <b-col cols="8">
+                <proximity-hourly v-bind:interval="interval" v-bind:site="site"></proximity-hourly>
+            </b-col>
+            <b-col cols="4">
+                <proximity-count v-bind:interval="interval" v-bind:site="site"></proximity-count>
+            </b-col>
         </b-row>
-
+        <b-row class="mt-5">
+            <b-col cols="8">
+                <dwell-time-hourly v-bind:interval="interval" v-bind:site="site"></dwell-time-hourly>
+            </b-col>
+            <b-col cols="4">
+                <dwell-time-count v-bind:interval="interval" v-bind:site="site"></dwell-time-count>
+            </b-col>
+        </b-row>
+        <b-row class="mt-5 mb-3">
+            <b-col cols="8">
+                <repeat-visitors-hourly v-bind:interval="interval" v-bind:site="site"></repeat-visitors-hourly>
+            </b-col>
+            <b-col cols="4">
+                <repeat-visitors-count v-bind:interval="interval" v-bind:site="site"></repeat-visitors-count>
+            </b-col>
+        </b-row>
     </div>
 </template>
 
-<style lang="sass"></style>
-
 <script>
     import {HTTP} from './../http'
-    import HourlyConnectedVisitors from './widgets/HourlyConnectedVisitors.vue'
-    import Proximity from './widgets/Proximity.vue'
+    import ProximityHourly from './widgets/ProximityHourly.vue'
+    import ProximityCount from './widgets/ProximityCount.vue'
+    import DwellTimeHourly from './widgets/DwellTimeHourly.vue'
+    import DwellTimeCount from './widgets/DwellTimeCount.vue'
+    import RepeatVisitorsHourly from './widgets/RepeatVisitorsHourly.vue'
+    import RepeatVisitorsCount from './widgets/RepeatVisitorsCount.vue'
 
     export default {
         name: 'dashboard',
         components: {
-            HourlyConnectedVisitors,
-            Proximity
+            ProximityHourly,
+            ProximityCount,
+            DwellTimeHourly,
+            DwellTimeCount,
+            RepeatVisitorsHourly,
+            RepeatVisitorsCount,
+
         },
         data() {
             return {
@@ -69,7 +91,8 @@
                 peakHour: 'n/a',
                 conversionRate: 'n/a',
                 topDevice: 'n/a',
-
+                totalConnected: null,
+                totalPasserby: null,
             }
         },
         watch: {
@@ -106,6 +129,8 @@
                         self.conversionRate = response.data.conversionRate + '%'
                         self.peakHour = (response.data.peakSummary.peakHour + ':00') + '-' + (response.data.peakSummary.peakHour + 1) + ':00'
                         self.topDevice = response.data.topManufacturers.name
+                        self.totalConnected = response.data.totalConnectedCount
+                        self.totalPasserby = response.data.totalPasserbyCount
                     })
             }
         }
