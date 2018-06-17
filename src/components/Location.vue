@@ -2,15 +2,15 @@
     <div>
         <b-col cols="12">
             <div v-if="imageURL" class="floor-map">
-                <a download target="_blank">
+                <a download="'floor' + currentFloor.aesUidString" target="_blank">
                     <b-img id="map"
                            :src="'https://cisco-cmx.unit.ua/api/config/v1/maps/imagesource/' + imageURL"
                            fluid
                     />
-                    <div v-if="mapCurrentUser">
-                        <div class="pin" v-bind:style="{left: relativeX + '%', top: relativeY + '%'}">
+                    <div v-if="showCurrentFloorUsers" v-for="user in currentFloorUsers">
+                        <div class="pin" v-bind:style="{left: relativeX(user.x) + '%', top: relativeY(user.y) + '%'}">
                         </div>
-                        <div class="pulse" v-bind:style="{left: relativeX + '%', top: relativeY + '%'}">
+                        <div class="pulse" v-bind:style="{left: relativeX(user.x) + '%', top: relativeY(user.y) + '%'}">
                         </div>
                     </div>
                 </a>
@@ -42,11 +42,11 @@
                     >
                         {{user.mac}}
                     </b-list-group-item>
-                    <b-collapse class="mt-2" ref="macCollapse" :id="'collapse' + (index)">
+                    <b-collapse class="mt-2" ref="macCollapse" :id="'collapse' + index">
                         <b-card>
                             <p>Coordinates is x: {{user.x}}, y: {{user.y}}</p>
-                            <p>User is @ {{currentFloor(user.map.mapHierarchyString)}}</p>
-                            <p>Manufacturer: {{user.manufacturer}}</p>
+                            <p>User is @ {{currentFloorParse(user.map.mapHierarchyString)}}</p>
+                            <p>Manufacturer: {{user.manufacturer !== null ? user.manufacturer : 'N/A' }}</p>
                         </b-card>
                         <br>
                     </b-collapse>
@@ -69,6 +69,10 @@
                 chosenIndex: null,
                 showCollapse: false,
                 imageURL: null,
+                showCurrentFloorUsers: false,
+                currentFloorUsers: [],
+                currentFloorAccessPoints: [],
+                currentFloor: null,
                 mapWidth: 0,
                 mapHeight: 0,
                 mapCurrentUser: null,
@@ -85,16 +89,18 @@
                     return item.mac.toLowerCase().indexOf(vm.searchedMac.toLowerCase()) !== -1
                 })
             },
-            relativeX: function() {
-                let relative = ((this.mapWidth * this.mapCurrentUser.x) / this.mapCurrentUser.map.floorDimension.width) / this.mapWidth
-                return relative * 100
-            },
-            relativeY: function() {
-                let relative = ((this.mapHeight * this.mapCurrentUser.y) / this.mapCurrentUser.map.floorDimension.length) / this.mapHeight
-                return relative * 100
-            },
         },
         methods: {
+            relativeX: async function(x) {
+                await this.getMapSize(document.getElementById('map'))
+                let relative = ((this.mapWidth * x) / this.currentFloor.dimension.width) / this.mapWidth
+                return relative * 100
+            },
+            relativeY: async function(y) {
+                await this.getMapSize(document.getElementById('map'))
+                let relative = ((this.mapHeight * y) / this.currentFloor.dimension.length) / this.mapHeight
+                return relative * 100
+            },
             makeActive(index) {
                 if ((this.chosenIndex != null && this.$refs.macCollapse[this.chosenIndex])) {
                     this.$refs.macCollapse[this.chosenIndex].toggle()
@@ -102,67 +108,99 @@
                 if (this.chosenIndex === index) {
                     this.$refs.macCollapse[this.chosenIndex].toggle()
                     this.chosenIndex = null
+                    this.mapCurrentUser = null
                 } else {
                     this.chosenIndex = index
                     this.currentImage = this.getMap(this.filteredUsers[index].map.image.imageName)
                 }
             },
-            currentFloor(mapHierarchyString) {
+            currentFloorParse(mapHierarchyString) {
                 let array = mapHierarchyString.split('>')
                 let string = array[array.length - 1].replace("_", " ")
                 return (string)
             },
-            addUserOnMap(width, height) {
-                this.mapHeight = height
-                this.mapWidth = width
-                console.log(height)
-                console.log(width)
-                this.mapCurrentUser = this.users[this.chosenIndex]
-                console.log(this.mapCurrentUser)
+            getClients() {
+                let self = this
+                CMX.get('/location/v2/clients')
+                    .then(response => {
+                        response.data.forEach(function (el) {
+                            self.users.push({
+                                mac: el.macAddress,
+                                x: el.mapCoordinate.x,
+                                y: el.mapCoordinate.y,
+                                manufacturer: el.manufacturer,
+                                bytesReceived: el.bytesReceived,
+                                bytesSent: el.bytesSent,
+                                ipAddress: el.ipAddress,
+                                map: el.mapInfo,
+                            })
+                        })
+                        self.totalUsers = self.users.length
+                        self.getAllMaps()
+                    })
+                    .catch(e => {
+                        console.log(e)
+                    })
+            },
+            getMapSize(map){
+                this.mapHeight = map.offsetHeight
+                this.mapWidth = map.offsetWidth
+            },
+            showMap: async function (floor) {
+                let self = this
+                this.currentFloor = floor
+                this.showCurrentFloorUsers = false
+                this.currentFloorAccessPoints = []
+                this.currentFloorUsers = []
+                this.currentFloorAccessPoints = floor.accessPoints
+                console.log(this.users[0])
+                await this.users.forEach(function (el) {
+                    if (el.map.floorRefId === floor.aesUidString) {
+                        self.currentFloorUsers.push(el)
+                    }
+                })
+                this.showCurrentFloorUsers = true
+                await this.getMapSize(document.getElementById('map'))
+                console.log(floor)
+            },
+            getAllMaps() {
+                let self = this
+                CMX.get('/config/v1/maps')
+                    .then(response => {
+                        let i = 0
+                        response.data.campuses.forEach(function (el) {
+                            if (el.buildingList.length > 0) {
+                                self.maps.push({
+                                    floors: el.buildingList[i].floorList,
+                                    name: el.buildingList[i].hierarchyName,
+                                })
+                                i++
+                            }
+                        })
+                        if (self.maps[0].floors[0]) {
+                            let lowest = self.maps[0].floors[0].floorNumber
+                            let remember = 0
+                            for (let i = 0; i < self.maps[0].floors.length; i++) {
+                                if (self.maps[0].floors[i].floorNumber < lowest) {
+                                    lowest = self.maps[0].floors[i].floorNumber
+                                    remember = i
+                                }
+                            }
+                            self.imageURL = self.maps[0].floors[remember].image.imageName
+                            self.showMap(self.maps[0].floors[remember])
+                        }
+                    })
+                    .catch(e => {
+                        console.log(e)
+                    })
             },
             getMap(image) {
                 this.imageURL = image
-                this.addUserOnMap(document.getElementById('map').offsetWidth, document.getElementById('map').offsetHeight)
+                // this.addUserOnMap(document.getElementById('map').offsetWidth, document.getElementById('map').offsetHeight)
             },
         },
-        beforeCreate() {
-            let self = this
-            CMX.get('/config/v1/maps')
-                .then(response => {
-                    let i = 0
-                    response.data.campuses.forEach(function (el) {
-                        if (el.buildingList.length > 0) {
-                            self.maps.push({
-                                floors: el.buildingList[i].floorList,
-                                name: el.buildingList[i].hierarchyName,
-                            })
-                            i++
-                        }
-                    })
-                    if (self.maps[0].floors[0].image.imageName) {
-                        self.imageURL = self.maps[0].floors[0].image.imageName
-                    }
-                })
-                .catch(e => {
-                    console.log(e)
-                })
-            CMX.get('/location/v2/clients')
-                .then(response => {
-                    response.data.forEach(function (el) {
-                        self.users.push({
-                            mac: el.macAddress,
-                            x: el.mapCoordinate.x,
-                            y: el.mapCoordinate.y,
-                            manufacturer: el.manufacturer,
-                            map: el.mapInfo,
-                        })
-                        console.log(el)
-                    })
-                    self.totalUsers = self.users.length
-                })
-                .catch(e => {
-                    console.log(e)
-                })
+        created() {
+            this.getClients()
         },
     }
 </script>
