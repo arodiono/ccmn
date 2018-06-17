@@ -80,20 +80,20 @@
         },
         methods: {
             getPasserby: async function () {
-                await HTTP.get('/presence/v1/passerby/hourly/' + this.interval + '?siteId=' + this.site)
+                await HTTP.get('/presence/v1/passerby/' + this.interval.type + '/' + this.interval.interval + '?siteId=' + this.site)
                     .then(response => {
                         this.passerby.labels.length = 0
                         this.passerby.values.length = 0
                         for (let key in response.data) {
                             if (response.data.hasOwnProperty(key)) {
-                                this.passerby.labels.push(key + ':00')
+                                this.passerby.labels.push(key)
                                 this.passerby.values.push(response.data[key])
                             }
                         }
                     })
             },
             getVisitors: async function () {
-                await HTTP.get('/presence/v1/visitor/hourly/' + this.interval + '?siteId=' + this.site)
+                await HTTP.get('/presence/v1/visitor/' + this.interval.type + '/' + this.interval.interval + '?siteId=' + this.site)
                     .then(response => {
                         this.visitors.values.length = 0
                         for (let key in response.data) {
@@ -104,7 +104,7 @@
                     })
             },
             getConnected: async function () {
-                await HTTP.get('/presence/v1/connected/hourly/' + this.interval + '?siteId=' + this.site)
+                await HTTP.get('/presence/v1/connected/' + this.interval.type + '/' + this.interval.interval + '?siteId=' + this.site)
                     .then(response => {
                         this.connected.values.length = 0
                         for (let key in response.data) {

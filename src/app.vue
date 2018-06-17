@@ -21,7 +21,7 @@
 </template>
 
 <script>
-  import dashboard from './components/dashboard.vue'
+  import dashboard from './components/Analytics.vue'
   import sidebar from './components/sidebar.vue'
 
   export default {
