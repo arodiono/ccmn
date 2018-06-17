@@ -77,12 +77,39 @@
         },
         data() {
             return {
-                interval: 'today',
+                interval: {
+                    interval: 'today',
+                    type: 'hourly'
+                },
                 intervalOptions: [
-                    {value: 'today', text: 'Today'},
-                    {value: 'yesterday', text: 'Yesterday'},
-                    {value: 'lastweek', text: 'Last week'},
-                    {value: 'lastmonth', text: 'Last month'},
+                    {
+                        value: {
+                            interval: 'today',
+                            type: 'hourly'
+                        },
+                        text: 'Today'
+                    },
+                    {
+                        value: {
+                            interval: 'yesterday',
+                            type: 'hourly'
+                        },
+                        text: 'Yesterday'
+                    },
+                    {
+                        value: {
+                            interval: 'lastweek',
+                            type: 'daily'
+                        },
+                        text: 'Last week'
+                    },
+                    {
+                        value: {
+                            interval: 'lastmonth',
+                            type: 'daily'
+                        },
+                        text: 'Last month'
+                    },
                 ],
                 site: '',
                 sitesOptions: [],
@@ -122,7 +149,7 @@
         methods: {
             getSummary: function () {
                 let self = this
-                HTTP.get('/presence/v1/kpisummary/' + this.interval + '?siteId=' + this.site)
+                HTTP.get('/presence/v1/kpisummary/' + this.interval.interval + '?siteId=' + this.site)
                     .then(response => {
                         self.totalVisitors = response.data.totalVisitorCount
                         self.dwellTime = Math.round(response.data.averageDwell) + ' mins'
