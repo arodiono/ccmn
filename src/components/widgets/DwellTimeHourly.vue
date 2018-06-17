@@ -82,7 +82,7 @@
         },
         methods: {
             getData: async function () {
-                await HTTP.get('/presence/v1/dwell/hourly/' + this.interval + '?siteId=' + this.site)
+                await HTTP.get('/presence/v1/dwell/' + this.interval.type + '/' + this.interval.interval + '?siteId=' + this.site)
                     .then(response => {
                         this.labels.length = 0
                         this.fiveToThirtyMinutes.length = 0
@@ -92,7 +92,7 @@
                         this.eightPlusHours.length = 0
                         for (let key in response.data) {
                             if (response.data.hasOwnProperty(key)) {
-                                this.labels.push(key + ':00')
+                                this.labels.push(key)
                                 this.fiveToThirtyMinutes.push(response.data[key].FIVE_TO_THIRTY_MINUTES)
                                 this.thirtyToSixtyMinutes.push(response.data[key].THIRTY_TO_SIXTY_MINUTES)
                                 this.oneToFiveHours.push(response.data[key].ONE_TO_FIVE_HOURS)

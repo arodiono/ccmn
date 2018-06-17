@@ -3,7 +3,7 @@
         <div class="sidebar-sticky">
             <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted"><span>Main</span></h6>
             <b-nav vertical class="w-25">
-                <b-nav-item to="/">Dashboard</b-nav-item>
+                <b-nav-item to="/">Analytics</b-nav-item>
             </b-nav>
             <b-nav vertical class="w-25">
                 <b-nav-item to="/location">Location</b-nav-item>

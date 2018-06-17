@@ -1,20 +1,18 @@
-import dashboard from './components/dashboard.vue'
-import location from './components/location.vue'
+import Analytics from './components/Analytics.vue'
+import Location from './components/Location.vue'
 
 
 export const routes = [
     {
         path: '/',
-        component: dashboard,
-        name: 'dashboard',
+        component: Analytics,
         meta: {
-            title: 'Dashboard'
+            title: 'Analytics'
         }
     },
     {
         path: '/location',
-        component: location,
-        name: 'location',
+        component: Location,
         meta: {
             title: 'Location'
         }

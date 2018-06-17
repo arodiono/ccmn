@@ -82,7 +82,7 @@
         },
         methods: {
             getData: async function () {
-                await HTTP.get('/presence/v1/repeatvisitors/hourly/' + this.interval + '?siteId=' + this.site)
+                await HTTP.get('/presence/v1/repeatvisitors/' + this.interval.type + '/' + this.interval.interval + '?siteId=' + this.site)
                     .then(response => {
                         this.labels.length = 0
                         this.daily.length = 0
@@ -92,7 +92,7 @@
                         this.yesterday.length = 0
                         for (let key in response.data) {
                             if (response.data.hasOwnProperty(key)) {
-                                this.labels.push(key + ':00')
+                                this.labels.push(key)
                                 this.daily.push(response.data[key].DAILY)
                                 this.weekly.push(response.data[key].WEEKLY)
                                 this.occasional.push(response.data[key].OCCASIONAL)

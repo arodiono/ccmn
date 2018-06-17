@@ -2,7 +2,7 @@
     <div>
         <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
             <b-col cols="6">
-                <h1 class="h2">Dashboard</h1>
+                <h1 class="h2">Analytics</h1>
             </b-col>
             <b-col cols="3">
                 <b-form-select v-model="site" :options="sitesOptions"/>
@@ -12,9 +12,16 @@
             </b-col>
         </div>
         <b-card-group deck class="mb-3">
-            <b-card header="Total Visitors" class="text-center" bg-variant="success" text-variant="white">
+            <b-card id="forecasting-visitors" @click="show = !show" header="Total Visitors" class="text-center" bg-variant="success" text-variant="white">
                 <p class="card-text">{{ totalVisitors }}</p>
             </b-card>
+
+
+            <b-popover placement="bottom" :show.sync="show" target="forecasting-visitors" title="Forecasting number of visitors">
+                Hello <strong>World!</strong>
+            </b-popover>
+
+
             <b-card header="Average Dwell Time" class="text-center" bg-variant="danger" text-variant="white">
                 <p class="card-text">{{ dwellTime }}</p>
             </b-card>
@@ -65,7 +72,7 @@
     import RepeatVisitorsCount from './widgets/RepeatVisitorsCount.vue'
 
     export default {
-        name: 'dashboard',
+        name: 'Analytics',
         components: {
             ProximityHourly,
             ProximityCount,
@@ -120,6 +127,7 @@
                 topDevice: 'n/a',
                 totalConnected: null,
                 totalPasserby: null,
+                show: false
             }
         },
         watch: {

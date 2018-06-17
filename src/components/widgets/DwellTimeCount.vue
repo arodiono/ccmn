@@ -78,7 +78,7 @@
         },
         methods: {
             getData: async function () {
-                await HTTP.get('/presence/v1/dwell/count/' + this.interval + '?siteId=' + this.site)
+                await HTTP.get('/presence/v1/dwell/count/' + this.interval.interval + '?siteId=' + this.site)
                     .then(response => {
                         this.fiveToThirtyMinutes = response.data.FIVE_TO_THIRTY_MINUTES
                         this.thirtyToSixtyMinutes = response.data.THIRTY_TO_SIXTY_MINUTES

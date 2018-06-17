@@ -78,7 +78,7 @@
         },
         methods: {
             getData: async function () {
-                await HTTP.get('/presence/v1/repeatvisitors/count/' + this.interval + '?siteId=' + this.site)
+                await HTTP.get('/presence/v1/repeatvisitors/count/' + this.interval.interval + '?siteId=' + this.site)
                     .then(response => {
                         this.daily = response.data.DAILY
                         this.weekly = response.data.WEEKLY
