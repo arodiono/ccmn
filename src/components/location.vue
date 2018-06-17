@@ -2,18 +2,18 @@
     <div>
         <b-col cols="12">
             <div v-if="imageURL" class="floor-map">
-                <a download="'floor' + currentFloor.aesUidString" target="_blank">
-                    <b-img id="map"
-                           :src="'https://cisco-cmx.unit.ua/api/config/v1/maps/imagesource/' + imageURL"
-                           fluid
-                    />
-                    <div v-if="showCurrentFloorUsers" v-for="user in currentFloorUsers">
-                        <div class="pin" v-bind:style="{left: relativeX(user.x) + '%', top: relativeY(user.y) + '%'}">
-                        </div>
-                        <div class="pulse" v-bind:style="{left: relativeX(user.x) + '%', top: relativeY(user.y) + '%'}">
-                        </div>
+                <!--<a download="'floor' + currentFloor.aesUidString" target="_blank">-->
+                <b-img id="map"
+                       v-bind:src="imageURL"
+                       fluid
+                />
+                <!--</a>-->
+                <div v-if="showCurrentFloorUsers" v-for="user in currentFloorUsers">
+                    <div class="pin" v-bind:style="{left: relativeX(user.x) + '%', top: relativeY(user.y) + '%'}">
                     </div>
-                </a>
+                    <div class="pulse" v-bind:style="{left: relativeX(user.x) + '%', top: relativeY(user.y) + '%'}">
+                    </div>
+                </div>
             </div>
         </b-col>
         <br>
@@ -70,6 +70,7 @@
                 showCollapse: false,
                 imageURL: null,
                 showCurrentFloorUsers: false,
+                floors: [],
                 currentFloorUsers: [],
                 currentFloorAccessPoints: [],
                 currentFloor: null,
@@ -152,18 +153,55 @@
                 this.showCurrentFloorUsers = false
                 this.currentFloorAccessPoints = []
                 this.currentFloorUsers = []
-                this.currentFloorAccessPoints = floor.accessPoints
+                this.currentFloorAccessPoints = floor.info.accessPoints
                 console.log(this.users[0])
                 await this.users.forEach(function (el) {
-                    if (el.map.floorRefId === floor.aesUidString) {
+                    if (el.map.floorRefId === floor.info.aesUidString) {
                         self.currentFloorUsers.push(el)
                     }
                 })
                 this.showCurrentFloorUsers = true
-                await this.getMapSize(document.getElementById('map'))
+                // await this.getMapSize(document.getElementById('map'))
                 console.log(floor)
             },
-            getAllMaps() {
+            retrieveFloorImage(floor) {
+                let self = this
+                console.log(floor)
+                CMX.get('/config/v1/maps/imagesource/' + floor.image.imageName, { responseType: 'arraybuffer' })
+                    .then(async function(response) {
+                        let imageType = response.headers['content-type'];
+                        let base64 = new Buffer(response.data).toString('base64');
+                        let dataURI = 'data:' + imageType + ';base64,' + base64;
+                        self.floors.push({
+                            imageData: dataURI,
+                            info: floor,
+                        })
+                        if (self.floors.length === self.maps[0].floors.length) {
+                            self.setFirstMap()
+                        }
+                    })
+                    .catch(e => {
+                        console.log(e)
+                    })
+            },
+            setFirstMap: function() {
+                if (this.maps[0].floors[0]) {
+                    let lowest = this.maps[0].floors[0].floorNumber
+                    for (let i = 0; i < this.maps[0].floors.length; i++) {
+                        if (this.maps[0].floors[i].floorNumber < lowest) {
+                            lowest = this.maps[0].floors[i].floorNumber
+                        }
+                    }
+                    for (let i = 0; i < this.maps[0].floors.length; i++) {
+                        if (this.floors[i].info.floorNumber === lowest) {
+                            this.imageURL = this.floors[i].imageData
+                            this.showMap(this.floors[i])
+                            break
+                        }
+                    }
+                }
+            },
+            getAllMaps: function() {
                 let self = this
                 CMX.get('/config/v1/maps')
                     .then(response => {
@@ -177,17 +215,8 @@
                                 i++
                             }
                         })
-                        if (self.maps[0].floors[0]) {
-                            let lowest = self.maps[0].floors[0].floorNumber
-                            let remember = 0
-                            for (let i = 0; i < self.maps[0].floors.length; i++) {
-                                if (self.maps[0].floors[i].floorNumber < lowest) {
-                                    lowest = self.maps[0].floors[i].floorNumber
-                                    remember = i
-                                }
-                            }
-                            self.imageURL = self.maps[0].floors[remember].image.imageName
-                            self.showMap(self.maps[0].floors[remember])
+                        for (let i = 0; i < self.maps[0].floors.length; i++) {
+                            self.retrieveFloorImage(self.maps[0].floors[i])
                         }
                     })
                     .catch(e => {
