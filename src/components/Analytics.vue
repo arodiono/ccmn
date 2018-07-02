@@ -12,17 +12,12 @@
             </b-col>
         </div>
         <b-card-group deck class="mb-3">
-            <b-card id="forecasting-visitors" @click="show = !show" header="Total Visitors" class="text-center" bg-variant="success" text-variant="white">
+            <b-card header="Total Visitors" class="text-center"
+                    bg-variant="success" text-variant="white">
                 <p class="card-text">{{ totalVisitors }}</p>
             </b-card>
-
-
-            <b-popover placement="bottom" :show.sync="show" target="forecasting-visitors" title="Forecasting number of visitors">
-                Hello <strong>World!</strong>
-            </b-popover>
-
-
-            <b-card header="Average Dwell Time" class="text-center" bg-variant="danger" text-variant="white">
+            <b-card header="Average Dwell Time" class="text-center"
+                    bg-variant="danger" text-variant="white">
                 <p class="card-text">{{ dwellTime }}</p>
             </b-card>
             <b-card header="Peak Hour" class="text-center" bg-variant="primary" text-variant="white">
@@ -33,6 +28,13 @@
             </b-card>
             <b-card header="Top Device Maker" class="text-center" bg-variant="info" text-variant="white">
                 <p class="card-text">{{ topDevice }}</p>
+            </b-card>
+            <b-card header="Tomorrow" class="text-center" bg-variant="dark" text-variant="white">
+                <p class="card-text">
+                Visitors ~{{ nextDayVisitors }}
+                Connected ~{{ nextDayConnected }}
+                Passerby ~{{ nextDayPasserby }}
+                </p>
             </b-card>
         </b-card-group>
         <b-row class="mt-5">
@@ -70,6 +72,8 @@
     import DwellTimeCount from './widgets/DwellTimeCount.vue'
     import RepeatVisitorsHourly from './widgets/RepeatVisitorsHourly.vue'
     import RepeatVisitorsCount from './widgets/RepeatVisitorsCount.vue'
+
+    const ESS = require('exponential-smoothing-stream')
 
     export default {
         name: 'Analytics',
@@ -127,12 +131,17 @@
                 topDevice: 'n/a',
                 totalConnected: null,
                 totalPasserby: null,
-                show: false
+                vShow: false,
+                dShow: false,
+                nextDayVisitors: '',
+                nextDayConnected: '',
+                nextDayPasserby: ''
             }
         },
         watch: {
             site: function () {
                 this.getSummary()
+                this.calcNextDayVisitorsCount()
             },
             interval: function () {
                 this.getSummary()
@@ -167,7 +176,42 @@
                         self.totalConnected = response.data.totalConnectedCount
                         self.totalPasserby = response.data.totalPasserbyCount
                     })
+            },
+            calcNextDayVisitorsCount: function () {
+                let weekData = {}
+                HTTP.get('/presence/v1/visitor/daily/lastweek?siteId=' + this.site)
+                    .then(response => {
+                        this.nextDayVisitors = this.forecast(response.data)
+                    })
+                HTTP.get('/presence/v1/connected/daily/lastweek?siteId=' + this.site)
+                    .then(response => {
+                        this.nextDayConnected = this.forecast(response.data)
+                    })
+                HTTP.get('/presence/v1/passerby/daily/lastweek?siteId=' + this.site)
+                    .then(response => {
+                        this.nextDayPasserby = this.forecast(response.data)
+                    })
+            },
+            forecast: function (obj) {
+                let data = Object.keys(obj).map(key => obj[key])
+
+                let a = new ESS({
+                    smoothingFactor: 2 / (data.length + 1),
+                    initialStrategy: new ESS.strategies.InitialStrategyMedian(data.length)
+                });
+                let valueList = [];
+
+                a.on('data', function (data) {
+                    valueList.push(data);
+                });
+                data.forEach(el => {
+                    a.write(parseInt(el));
+                })
+                a.end();
+
+                return Math.round(valueList[valueList.length - 1])
             }
+
         }
     }
 </script>
