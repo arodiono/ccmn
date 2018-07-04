@@ -1,13 +1,19 @@
 <template>
     <div>
         <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-            <b-col cols="6">
+            <b-col cols="4">
                 <h1 class="h2">Analytics</h1>
             </b-col>
-            <b-col cols="3">
+            <b-col cols="2">
+                <date-picker name="date" v-model="date" :config="config"></date-picker>
+            </b-col>
+            <b-col cols="2">
+                <date-picker name="date" v-model="date" :config="config"></date-picker>
+            </b-col>
+            <b-col cols="2">
                 <b-form-select v-model="site" :options="sitesOptions"/>
             </b-col>
-            <b-col cols="3">
+            <b-col cols="2">
                 <b-form-select v-model="interval" :options="intervalOptions"/>
             </b-col>
         </div>
@@ -72,7 +78,7 @@
     import DwellTimeCount from './widgets/DwellTimeCount.vue'
     import RepeatVisitorsHourly from './widgets/RepeatVisitorsHourly.vue'
     import RepeatVisitorsCount from './widgets/RepeatVisitorsCount.vue'
-
+    import datePicker from 'vue-bootstrap-datetimepicker'
     const ESS = require('exponential-smoothing-stream')
 
     export default {
@@ -84,10 +90,16 @@
             DwellTimeCount,
             RepeatVisitorsHourly,
             RepeatVisitorsCount,
-
+            datePicker
         },
         data() {
             return {
+                date: false,
+                config: {
+                    format: 'YYYY-MM-DD',
+                    useCurrent: true,
+                    showTodayButton: true
+                },
                 interval: {
                     interval: 'today',
                     type: 'hourly'

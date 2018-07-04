@@ -34,6 +34,11 @@
 </script>
 
 <style lang="sass">
+    $fa-font-path : "~@fortawesome/fontawesome-free-webfonts/webfonts"
+    @import "~@fortawesome/fontawesome-free-webfonts/scss/fontawesome.scss"
+    @import "~@fortawesome/fontawesome-free-webfonts/scss/fa-solid.scss"
+    @import "~@fortawesome/fontawesome-free-webfonts/scss/fa-regular.scss"
+    @import "~@fortawesome/fontawesome-free-webfonts/scss/fa-brands.scss"
     body
         font-size: .875rem
     .navbar-brand
