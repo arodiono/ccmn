@@ -44,7 +44,7 @@
                 </div>
             </b-list-group>
         </b-col>
-        <b-modal ref="modal" hide-footer title="User info">
+        <b-modal ref="modal" size="md" hide-footer title="User info">
             <div v-if="mapCurrentUser">
                 <p class="my-4">Mac Address: {{mapCurrentUser.macAddress}}</p>
                 <p class="my-4">Status: {{mapCurrentUser.dot11Status}}</p>
@@ -165,22 +165,6 @@
                 result += Math.floor(differ % 60) + 's ';
                 return (result);
             },
-            // makeActive(user, index, clicked) { //TODO: TOTALLY REDO
-            //     if (clicked) {
-            //         this.$refs.collapseTab[index].toggle();
-            //     }
-            //     if (this.chosenIndex !== index) {
-            //         if (this.$refs.collapseTab[this.chosenIndex]) {
-            //             this.$refs.collapseTab[this.chosenIndex].toggle();
-            //         }
-            //         this.chosenIndex = index;
-            //         for (let i = 0; i < this.floors.length; i++) {
-            //             if (this.floors[i].info.aesUidString === user.map.floorRefId) {
-            //                 this.showMap(this.floors[i]);
-            //             }
-            //         }
-            //     }
-            // },
             currentFloorParse(mapHierarchyString) {
                 let array = mapHierarchyString.split('>');
                 let string = array[array.length - 1].replace("_", " ");
@@ -216,7 +200,7 @@
                     this.imageURL = floor.imageData;
                     this.currentFloorUsers = [];
                     this.currentFloorAccessPoints = floor.info.accessPoints;
-                    // console.log(this.currentFloorAccessPoints);
+                    console.log(this.currentFloorAccessPoints);
                     await this.users.forEach(function (el) {
                         if (el.mapInfo.floorRefId === floor.info.aesUidString) {
                             self.currentFloorUsers.push(el)
