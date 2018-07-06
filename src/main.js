@@ -8,8 +8,6 @@ import 'bootstrap-vue/dist/bootstrap-vue.css'
 
 Vue.config.productionTip = false
 
-Vue.prototype.$users = [];
-
 Vue.use(VueRouter);
 Vue.use(BootstrapVue);
 Vue.use(VueRouter)
@@ -21,7 +19,7 @@ const router = new VueRouter({
 })
 
 router.beforeEach((to, from, next) => {
-    document.title = to.meta.title + ' | CCMN'
+    document.title = to.meta.title + ' | CCMN';
     next()
 })
 

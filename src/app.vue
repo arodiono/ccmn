@@ -7,18 +7,6 @@
                 </li>
             </ul>
         </nav>
-        <b-alert v-for="diffUsers in diff" :show="dismissCountDown"
-                 dismissible
-                 variant="warning"
-                 @dismissed="dismissCountDown = 0"
-                 @dismiss-count-down="countDownChanged">
-            <p>This alert will dismiss after {{dismissCountDown}} seconds...</p>
-            <b-progress variant="warning"
-                        :max="dismissSecs"
-                        :value="dismissCountDown"
-                        height="4px">
-            </b-progress>
-        </b-alert>
         <b-container fluid>
             <div class="row">
                 <sidebar></sidebar>
@@ -36,7 +24,6 @@
     import dashboard from './components/Analytics.vue'
     import sidebar from './components/sidebar.vue'
     import {CMX} from './cmx'
-    import $ from 'jquery'
 
     export default {
         name: 'app',
@@ -46,51 +33,11 @@
         },
         data() {
             return {
-                interval: null,
                 dismissSecs: 3,
                 dismissCountDown: 0,
-                diff: []
             }
         },
         methods: {
-            findNew(arr) {
-                let a = [];
-                console.log(arr.length, this.$users.length);
-                for (let i = 0; i < arr.length; i++) {
-                    a[arr[i].macAddress] = arr[i];
-                }
-                for (let i = 0; i < this.$users.length; i++) {
-                    if (a[this.$users[i].macAddress]) {
-                        delete a[this.$users[i].macAddress];
-                    } else {
-                        a[this.$users[i].macAddress] = this.$users[i];
-                    }
-                }
-                return a.length === 0 ? null : a;
-            },
-            start() { // TODO: NEED TO TEST
-                // clearInterval(this.interval);
-                // this.interval = setInterval(() => {
-                //     let self = this;
-                //     CMX.get('/location/v2/clients')
-                //         .then(async response => {
-                //             let arr = [];
-                //             await response.data.forEach(el => {
-                //                 arr.push(el)
-                //             });
-                //             if (self.$users.length !== 0) {
-                //                 self.diff = self.findNew(arr);
-                //             }
-                //             if (self.diff) {
-                //                 console.log(self.diff);
-                //             }
-                //             self.$users = arr;
-                //         })
-                //         .catch(e => {
-                //             console.log(e)
-                //         })
-                // }, 5000)
-            },
             countDownChanged(dismissCountDown) {
                 this.dismissCountDown = dismissCountDown
             },
@@ -98,9 +45,6 @@
                 this.dismissCountDown = this.dismissSecs
             }
         },
-        created() {
-            this.start();
-        }
     }
 </script>
 

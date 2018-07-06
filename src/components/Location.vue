@@ -1,18 +1,30 @@
 <template>
     <div>
+        <div class="alert-message">
+            <b-alert v-for="newUser in diff" :show="dismissCountDown"
+                     @dismissed="dismissCountDown = 0"
+                     @dismiss-count-down="countDownChanged">
+                MAC: {{newUser.macAddress}} now is on the {{currentFloorParse(newUser.mapInfo.mapHierarchyString)}}.
+            </b-alert>
+        </div>
         <b-col cols="12" v-if="imageURL">
             <br><br>
             <b-button-group v-if="floors">
-                <b-button v-for="(floor, index) in floors" @click="showMap(floor)" :key="index">{{floor.info.floorNumber}}</b-button>
+                <b-button v-for="(floor, index) in floors" @click="showMap(floor, true)" :key="index">
+                    {{floor.info.floorNumber}}
+                </b-button>
             </b-button-group>
             <br><br>
             <div class="floor-map">
                 <b-img id="map" :src="imageURL" fluid></b-img>
-                <div v-if="showCurrentFloorUsers" v-for="(user, index) in currentFloorUsers" class="pin"
-                     @click="showModalUser(user, index, false)" :style="setStyles(user.mapCoordinate.x, user.mapCoordinate.y, index)">
+                <div v-for="(user, index) in currentFloorUsers"
+                     :class="{'pin-associated': (user.dot11Status === 'ASSOCIATED'),
+                                'pin-unassociated': (user.dot11Status !== 'ASSOCIATED')}"
+                     @click="showModalUser(user, index, false)"
+                     :style="setStyles(user.styles.x, user.styles.y, index)">
                 </div>
-                <div v-if="showCurrentFloorUsers" v-for="endPoint in currentFloorAccessPoints" class="endpoint"
-                     :style="setStyles(endPoint.mapCoordinates.x, endPoint.mapCoordinates.y, -1)">
+                <div v-for="(endPoint, index) in currentFloorAccessPoints" class="endpoint"
+                     :style="setStyles(relativeX(endPoint.mapCoordinates.x), relativeY(endPoint.mapCoordinates.y), -1)">
                 </div>
             </div>
         </b-col>
@@ -33,18 +45,18 @@
             <b-list-group v-if="users.length > 0">
                 <div v-for="(user, index) in filteredUsers" :key="index">
                     <b-list-group-item
-                                       button
-                                       @click="showModalUser(user, index, true)"
-                                       :class="{active: index === listIndex}"
-                                       :id="'mac-' + index"
-                                       v-bind:data-index="index"
+                            button
+                            @click="showModalUser(user, index, true)"
+                            :class="{active: index === listIndex}"
+                            :id="'mac-' + index"
+                            v-bind:data-index="index"
                     >
                         {{user.macAddress}}
                     </b-list-group-item>
                 </div>
             </b-list-group>
         </b-col>
-        <b-modal ref="modal" size="md" hide-footer title="User info">
+        <b-modal v-model="modalShow" ref="modal" size="md" centered hide-footer title="User info">
             <div v-if="mapCurrentUser">
                 <p class="my-4">Mac Address: {{mapCurrentUser.macAddress}}</p>
                 <p class="my-4">Status: {{mapCurrentUser.dot11Status}}</p>
@@ -56,14 +68,17 @@
                     </ul>
                 </div>
                 <div v-else>
-                    <p class="my-4" >IP addresses: N/A</p>
+                    <p class="my-4">IP addresses: N/A</p>
                 </div>
-                <p class="my-4">Coordinates: x = {{mapCurrentUser.mapCoordinate.x}}, y = {{mapCurrentUser.mapCoordinate.y}}</p>
+                <p class="my-4">Coordinates: x = {{mapCurrentUser.mapCoordinate.x}}, y =
+                    {{mapCurrentUser.mapCoordinate.y}}</p>
                 <p class="my-4">Current Floor: {{currentFloorParse(mapCurrentUser.mapInfo.mapHierarchyString)}}</p>
                 <p class="my-4">Last Seen: {{getLastSeen(mapCurrentUser)}} ago</p>
                 <p class="my-4">Currently Tracked: {{mapCurrentUser.currentlyTracked}}</p>
-                <p class="my-4">Manufacturer: {{mapCurrentUser.manufacturer === null ? 'N/A' : mapCurrentUser.manufacturer}}</p>
-                <p class="my-4">Connected AP: {{mapCurrentUser.apMacAddress === '' ? 'Unknown' : mapCurrentUser.apMacAddress}}</p>
+                <p class="my-4">Manufacturer: {{mapCurrentUser.manufacturer === null ? 'N/A' :
+                    mapCurrentUser.manufacturer}}</p>
+                <p class="my-4">Connected AP: {{mapCurrentUser.apMacAddress === '' ? 'Unknown' :
+                    mapCurrentUser.apMacAddress}}</p>
                 <p class="my-4">Detecting Controllers: {{mapCurrentUser.detectingControllers}}</p>
                 <p class="my-4">SSID: {{mapCurrentUser.ssId === '' ? 'Unknown' : mapCurrentUser.ssId}}</p>
                 <p class="my-4">Username: {{mapCurrentUser.userName === '' ? 'Unknown' : mapCurrentUser.userName}}</p>
@@ -86,12 +101,15 @@
         data() {
             return {
                 users: [],
+                diff: [],
+                dismissSecs: 3,
+                dismissCountDown: 0,
                 totalUsers: 0,
                 chosenIndex: null,
                 listIndex: null,
                 showCollapse: false,
                 imageURL: null,
-                showCurrentFloorUsers: false,
+                modalShow: false,
                 floors: [],
                 currentFloorUsers: [],
                 currentFloorAccessPoints: [],
@@ -104,7 +122,16 @@
                 searchedMac: ''
             }
         },
-        watch: {},
+        watch: {
+            users(oldValue, newValue) {
+                this.showMap(this.currentFloor, false);
+            },
+            modalShow(oldValue, newValue) {
+                if (newValue === true) {
+                    this.listIndex = null;
+                }
+            }
+        },
         computed: {
             filteredUsers: function () {
                 let vm = this;
@@ -118,15 +145,17 @@
                 let styles = {};
                 if (index === this.chosenIndex) {
                     styles = {
-                        left: this.relativeX(x) + '%',
-                        top: this.relativeY(y) + '%',
+                        left: x + '%',
+                        top: y + '%',
                         backgroundColor: 'red',
+                        boxShadow: '0 0 10px rgba(0,0,0,0.7), 0 0 20px rgba(0,0,0,0.7), 0 0 30px rgba(0,0,0,0.7)',
+                        opacity: 1,
                         zIndex: 100
                     };
                 } else {
                     styles = {
-                        left: this.relativeX(x) + '%',
-                        top: this.relativeY(y) + '%',
+                        left: x + '%',
+                        top: y + '%',
                     };
                 }
                 return (styles);
@@ -139,16 +168,24 @@
                 let relative = ((this.mapHeight * y) / this.currentFloor.info.dimension.length) / this.mapHeight;
                 return relative * 100
             },
-            showModalUser(user, index, searched) {
+            showModalUser: async function(user, index, searched) {
                 if (searched) {
+                    let floor = this.floors.find(el => el.info.aesUidString === user.mapInfo.floorRefId);
+                    await this.showMap(floor, true);
                     this.listIndex = index;
+                    for (let i = 0; i < this.currentFloorUsers.length; i++) {
+                        if (user.macAddress === this.currentFloorUsers[i].macAddress) {
+                            this.chosenIndex = i;
+                            break;
+                        }
+                    }
                 } else {
                     this.chosenIndex = index;
                 }
                 this.mapCurrentUser = user;
                 this.$refs.modal.show();
             },
-            hideModal () {
+            hideModal() {
                 this.listIndex = null;
                 this.chosenIndex = null;
                 this.$refs.modal.hide();
@@ -170,46 +207,30 @@
                 let string = array[array.length - 1].replace("_", " ");
                 return (string)
             },
-            getClients() {
-                let self = this;
-                CMX.get('/location/v2/clients')
-                    .then(response => {
-                        response.data.forEach(function (el) {
-                            self.users.push(el)
-                        });
-                        console.log(self.users);
-                        self.totalUsers = self.users.length;
-                        self.getAllMaps()
-                    })
-                    .catch(e => {
-                        console.log(e)
-                    })
-            },
             getMapSize() {
                 let map = $('#map');
                 this.mapHeight = map.height();
                 this.mapWidth = map.width();
             },
-            showMap: async function (floor) {
-                this.listIndex = null;
-                this.chosenIndex = null;
-                if (!this.currentFloor || this.currentFloor.info.floorNumber !== floor.info.floorNumber) {
-                    let self = this;
+            showMap: async function (floor, clicked) {
+                if (floor != null) {
+                    if (clicked) {
+                        this.listIndex = null;
+                        this.chosenIndex = null;
+                    }
                     this.currentFloor = floor;
-                    this.showCurrentFloorUsers = false;
                     this.imageURL = floor.imageData;
+                    await this.getMapSize();
                     this.currentFloorUsers = [];
                     this.currentFloorAccessPoints = floor.info.accessPoints;
-                    console.log(this.currentFloorAccessPoints);
-                    await this.users.forEach(function (el) {
+                    await this.users.forEach(el => {
                         if (el.mapInfo.floorRefId === floor.info.aesUidString) {
-                            self.currentFloorUsers.push(el)
+                            el.styles = {};
+                            el.styles.x = this.relativeX(el.mapCoordinate.x);
+                            el.styles.y = this.relativeY(el.mapCoordinate.y);
+                            this.currentFloorUsers.push(el)
                         }
                     });
-                    await this.getMapSize();
-                    await setTimeout(function () {
-                        self.showCurrentFloorUsers = true;
-                    }, 300);
                 }
             },
             retrieveFloorImage(floor) {
@@ -256,9 +277,59 @@
                         console.log(e)
                     })
             },
+            findNew(arr) {
+                let dict = [];
+                let result = [];
+                arr.forEach(el => {
+                    dict[el.macAddress] = el;
+                    dict.length++;
+                });
+                for (let i = 0; i < this.users.length; i++) {
+                    if (dict[this.users[i].macAddress]) {
+                        delete dict[this.users[i].macAddress];
+                        dict.length = dict.length - 1;
+                    }
+                }
+                dict.forEach(el => result.push(el));
+                return result;
+            },
+            getUsers() {
+                let vm = this;
+                CMX.get('/location/v2/clients')
+                    .then(async response => {
+                        let arr = [];
+                        await response.data.forEach(el => {
+                            arr.push(el)
+                        });
+                        if (vm.users.length !== 0) {
+                            vm.diff = vm.findNew(arr);
+                        }
+                        if (vm.diff.length > 0) {
+                            console.log('New users!!!', vm.diff);
+                            for (let i = 0; i < vm.diff.length; i++) {
+                                vm.showAlert();
+                            }
+                        }
+                        vm.users = arr;
+                        vm.totalUsers = vm.users.length;
+                    })
+                    .catch(e => {
+                        console.log(e)
+                    })
+            },
+            countDownChanged(dismissCountDown) {
+                this.dismissCountDown = dismissCountDown
+            },
+            showAlert() {
+                this.dismissCountDown = this.dismissSecs
+            }
         },
         created() {
-            this.getClients()
+            this.getAllMaps();
+            setTimeout(() => this.getUsers(), 500);
+            setInterval(() => {
+                this.getUsers();
+            }, 5000);
         },
     }
 </script>
@@ -266,23 +337,56 @@
 <style scoped>
     .floor-map {
         position: relative;
+        max-width: 1765px;
+        max-height: 897px;
     }
 
-    .pin {
+    .alert-message {
+        font-size: 0.9rem;
+        position: fixed;
+        padding: 10px 20px;
+        bottom: 0;
+        left: 0;
+        z-index: 101;
+    }
+
+    .pin-associated {
         width: 18px;
         height: 18px;
-        border-radius: 50% 50% 50% 50%;
+        border-radius: 50%;
         background: #9b9895;
+        opacity: 0.8;
         position: absolute;
     }
 
-    .pin:after {
+    .pin-associated:after {
+        content: '';
+        width: 10px;
+        height: 10px;
+        margin: 4px 0 0 4px;
+        background: #2f2f2f;
+        opacity: 0.8;
+        position: absolute;
+        border-radius: 50%;
+    }
+
+    .pin-unassociated {
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: #fe631f;
+        opacity: 0.8;
+        position: absolute;
+    }
+
+    .pin-unassociated:after {
         content: '';
         width: 10px;
         height: 10px;
         margin: 4px 0 0 4px;
         background: #2f2f2f;
         position: absolute;
+        opacity: 0.8;
         border-radius: 50%;
     }
 
