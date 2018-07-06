@@ -17,12 +17,13 @@
             <br><br>
             <div class="floor-map">
                 <b-img id="map" :src="imageURL" fluid></b-img>
-                <div v-for="(user, index) in currentFloorUsers" :class="{'pin-associated': (user.dot11Status === 'ASSOCIATED'),
-                                                                        'pin-unassociated': (user.dot11Status !== 'ASSOCIATED')}"
+                <div v-for="(user, index) in currentFloorUsers"
+                     :class="{'pin-associated': (user.dot11Status === 'ASSOCIATED'),
+                                'pin-unassociated': (user.dot11Status !== 'ASSOCIATED')}"
                      @click="showModalUser(user, index, false)"
                      :style="setStyles(user.styles.x, user.styles.y, index)">
                 </div>
-                <div v-for="endPoint in currentFloorAccessPoints" class="endpoint"
+                <div v-for="(endPoint, index) in currentFloorAccessPoints" class="endpoint"
                      :style="setStyles(relativeX(endPoint.mapCoordinates.x), relativeY(endPoint.mapCoordinates.y), -1)">
                 </div>
             </div>
@@ -55,7 +56,7 @@
                 </div>
             </b-list-group>
         </b-col>
-        <b-modal v-model="modalShow" ref="modal" size="md" hide-footer title="User info">
+        <b-modal v-model="modalShow" ref="modal" size="md" centered hide-footer title="User info">
             <div v-if="mapCurrentUser">
                 <p class="my-4">Mac Address: {{mapCurrentUser.macAddress}}</p>
                 <p class="my-4">Status: {{mapCurrentUser.dot11Status}}</p>
@@ -325,7 +326,7 @@
         },
         created() {
             this.getAllMaps();
-            setTimeout(() => this.getUsers(), 300);
+            setTimeout(() => this.getUsers(), 500);
             setInterval(() => {
                 this.getUsers();
             }, 5000);
