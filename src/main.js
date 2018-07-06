@@ -12,6 +12,10 @@ import '@fortawesome/fontawesome-free-webfonts/'
 
 Vue.config.productionTip = false
 
+Vue.prototype.$users = [];
+
+Vue.use(VueRouter);
+Vue.use(BootstrapVue);
 Vue.use(VueRouter)
 Vue.use(BootstrapVue)
 Vue.use(datePicker);

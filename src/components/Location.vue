@@ -3,13 +3,13 @@
         <b-col cols="12" v-if="imageURL">
             <br><br>
             <b-button-group v-if="floors">
-                <b-button v-for="(floor, index) in floors" :key="index">{{floor.info.floorNumber}}</b-button>
+                <b-button v-for="(floor, index) in floors" @click="showMap(floor)" :key="index">{{floor.info.floorNumber}}</b-button>
             </b-button-group>
             <br><br>
             <div class="floor-map">
                 <b-img id="map" :src="imageURL" fluid></b-img>
                 <div v-if="showCurrentFloorUsers" v-for="(user, index) in currentFloorUsers" class="pin"
-                     @click="makeActive(user, index, true)" :style="setStyles(user.x, user.y, index)">
+                     @click="showModalUser(user, index, false)" :style="setStyles(user.mapCoordinate.x, user.mapCoordinate.y, index)">
                 </div>
                 <div v-if="showCurrentFloorUsers" v-for="endPoint in currentFloorAccessPoints" class="endpoint"
                      :style="setStyles(endPoint.mapCoordinates.x, endPoint.mapCoordinates.y, -1)">
@@ -32,27 +32,47 @@
             <br>
             <b-list-group v-if="users.length > 0">
                 <div v-for="(user, index) in filteredUsers" :key="index">
-                    <b-list-group-item ref="macButtons"
+                    <b-list-group-item
                                        button
-                                       v-b-toggle="'collapse-' + index"
-                                       @click="makeActive(user, index, false)"
-                                       :class="{active: index === chosenIndex}"
+                                       @click="showModalUser(user, index, true)"
+                                       :class="{active: index === listIndex}"
                                        :id="'mac-' + index"
                                        v-bind:data-index="index"
                     >
-                        {{user.mac}}
+                        {{user.macAddress}}
                     </b-list-group-item>
-                    <b-collapse class="mt-2" ref="collapseTab" :id="'collapse-' + index">
-                        <b-card>
-                            <p>Coordinates is x: {{user.x}}, y: {{user.y}}</p>
-                            <p>User is @ {{currentFloorParse(user.map.mapHierarchyString)}}</p>
-                            <p>Manufacturer: {{user.manufacturer !== null ? user.manufacturer : 'N/A' }}</p>
-                        </b-card>
-                        <br>
-                    </b-collapse>
                 </div>
             </b-list-group>
         </b-col>
+        <b-modal ref="modal" size="md" hide-footer title="User info">
+            <div v-if="mapCurrentUser">
+                <p class="my-4">Mac Address: {{mapCurrentUser.macAddress}}</p>
+                <p class="my-4">Status: {{mapCurrentUser.dot11Status}}</p>
+                <p class="my-4">Network Status: {{mapCurrentUser.networkStatus}}</p>
+                <div v-if="mapCurrentUser.ipAddress">
+                    <span>IP addresses:</span>
+                    <ul>
+                        <li v-for="ip in mapCurrentUser.ipAddress">{{ip}}</li>
+                    </ul>
+                </div>
+                <div v-else>
+                    <p class="my-4" >IP addresses: N/A</p>
+                </div>
+                <p class="my-4">Coordinates: x = {{mapCurrentUser.mapCoordinate.x}}, y = {{mapCurrentUser.mapCoordinate.y}}</p>
+                <p class="my-4">Current Floor: {{currentFloorParse(mapCurrentUser.mapInfo.mapHierarchyString)}}</p>
+                <p class="my-4">Last Seen: {{getLastSeen(mapCurrentUser)}} ago</p>
+                <p class="my-4">Currently Tracked: {{mapCurrentUser.currentlyTracked}}</p>
+                <p class="my-4">Manufacturer: {{mapCurrentUser.manufacturer === null ? 'N/A' : mapCurrentUser.manufacturer}}</p>
+                <p class="my-4">Connected AP: {{mapCurrentUser.apMacAddress === '' ? 'Unknown' : mapCurrentUser.apMacAddress}}</p>
+                <p class="my-4">Detecting Controllers: {{mapCurrentUser.detectingControllers}}</p>
+                <p class="my-4">SSID: {{mapCurrentUser.ssId === '' ? 'Unknown' : mapCurrentUser.ssId}}</p>
+                <p class="my-4">Username: {{mapCurrentUser.userName === '' ? 'Unknown' : mapCurrentUser.userName}}</p>
+                <p class="my-4">Band: {{mapCurrentUser.band === '' ? 'Unknown' : mapCurrentUser.band}}</p>
+                <p class="my-4">Bytes Received: {{mapCurrentUser.bytesReceived}}</p>
+                <p class="my-4">Bytes Sent: {{mapCurrentUser.bytesSent}}</p>
+            </div>
+            <b-btn class="mt-3" variant="outline-danger" block @click="hideModal">Close Me</b-btn>
+        </b-modal>
     </div>
 </template>
 
@@ -68,6 +88,7 @@
                 users: [],
                 totalUsers: 0,
                 chosenIndex: null,
+                listIndex: null,
                 showCollapse: false,
                 imageURL: null,
                 showCurrentFloorUsers: false,
@@ -88,7 +109,7 @@
             filteredUsers: function () {
                 let vm = this;
                 return this.users.filter(function (item) {
-                    return item.mac.toLowerCase().indexOf(vm.searchedMac.toLowerCase()) !== -1
+                    return item.macAddress.toLowerCase().indexOf(vm.searchedMac.toLowerCase()) !== -1
                 })
             },
         },
@@ -118,21 +139,31 @@
                 let relative = ((this.mapHeight * y) / this.currentFloor.info.dimension.length) / this.mapHeight;
                 return relative * 100
             },
-            makeActive(user, index, clicked) { //TODO: TOTALLY REDO
-                if (clicked) {
-                    this.$refs.collapseTab[index].toggle();
-                }
-                if (this.chosenIndex !== index) {
-                    if (this.$refs.collapseTab[this.chosenIndex]) {
-                        this.$refs.collapseTab[this.chosenIndex].toggle();
-                    }
+            showModalUser(user, index, searched) {
+                if (searched) {
+                    this.listIndex = index;
+                } else {
                     this.chosenIndex = index;
-                    for (let i = 0; i < this.floors.length; i++) {
-                        if (this.floors[i].info.aesUidString === user.map.floorRefId) {
-                            this.showMap(this.floors[i]);
-                        }
-                    }
                 }
+                this.mapCurrentUser = user;
+                this.$refs.modal.show();
+            },
+            hideModal () {
+                this.listIndex = null;
+                this.chosenIndex = null;
+                this.$refs.modal.hide();
+            },
+            getLastSeen(user) {
+                let now = new Date().getTime() / 1000;
+                let result = '';
+                let userDate = new Date(user.statistics.lastLocatedTime).getTime() / 1000;
+                let differ = now - userDate;
+                let minutes = Math.floor(differ / 60);
+                if (minutes !== 0) {
+                    result += minutes + 'm ';
+                }
+                result += Math.floor(differ % 60) + 's ';
+                return (result);
             },
             currentFloorParse(mapHierarchyString) {
                 let array = mapHierarchyString.split('>');
@@ -144,17 +175,9 @@
                 CMX.get('/location/v2/clients')
                     .then(response => {
                         response.data.forEach(function (el) {
-                            self.users.push({
-                                mac: el.macAddress,
-                                x: el.mapCoordinate.x,
-                                y: el.mapCoordinate.y,
-                                manufacturer: el.manufacturer,
-                                bytesReceived: el.bytesReceived,
-                                bytesSent: el.bytesSent,
-                                ipAddress: el.ipAddress,
-                                map: el.mapInfo,
-                            })
+                            self.users.push(el)
                         });
+                        console.log(self.users);
                         self.totalUsers = self.users.length;
                         self.getAllMaps()
                     })
@@ -168,6 +191,8 @@
                 this.mapWidth = map.width();
             },
             showMap: async function (floor) {
+                this.listIndex = null;
+                this.chosenIndex = null;
                 if (!this.currentFloor || this.currentFloor.info.floorNumber !== floor.info.floorNumber) {
                     let self = this;
                     this.currentFloor = floor;
@@ -177,7 +202,7 @@
                     this.currentFloorAccessPoints = floor.info.accessPoints;
                     console.log(this.currentFloorAccessPoints);
                     await this.users.forEach(function (el) {
-                        if (el.map.floorRefId === floor.info.aesUidString) {
+                        if (el.mapInfo.floorRefId === floor.info.aesUidString) {
                             self.currentFloorUsers.push(el)
                         }
                     });
@@ -198,30 +223,16 @@
                             imageData: dataURI,
                             info: floor,
                         });
-                        await self.floors.sort();
+                        await self.floors.sort(function (a, b) {
+                            return a.info.floorNumber - b.info.floorNumber;
+                        });
                         if (self.floors.length === self.maps[0].floors.length) {
-                            self.setFirstMap()
+                            self.showMap(self.floors[0])
                         }
                     })
                     .catch(e => {
                         console.log(e)
                     })
-            },
-            setFirstMap: function () {
-                if (this.maps[0].floors[0]) {
-                    let lowest = this.maps[0].floors[0].floorNumber;
-                    for (let i = 0; i < this.maps[0].floors.length; i++) {
-                        if (this.maps[0].floors[i].floorNumber < lowest) {
-                            lowest = this.maps[0].floors[i].floorNumber
-                        }
-                    }
-                    for (let i = 0; i < this.maps[0].floors.length; i++) {
-                        if (this.floors[i].info.floorNumber === lowest) {
-                            this.showMap(this.floors[i]);
-                            break;
-                        }
-                    }
-                }
             },
             getAllMaps: function () {
                 let self = this;
@@ -265,10 +276,19 @@
         position: absolute;
     }
 
+    .pin:after {
+        content: '';
+        width: 10px;
+        height: 10px;
+        margin: 4px 0 0 4px;
+        background: #2f2f2f;
+        position: absolute;
+        border-radius: 50%;
+    }
+
     .endpoint {
         width: 18px;
         height: 18px;
-        border-radius: 50% 50% 50% 50%;
         background: #2e9b2d;
         position: absolute;
     }
@@ -280,17 +300,6 @@
         margin: 4px 0 0 4px;
         background: #284029;
         position: absolute;
-        border-radius: 50%;
-    }
-
-    .pin:after {
-        content: '';
-        width: 10px;
-        height: 10px;
-        margin: 4px 0 0 4px;
-        background: #2f2f2f;
-        position: absolute;
-        border-radius: 50%;
     }
 
 </style>
