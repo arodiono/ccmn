@@ -10,6 +10,7 @@
 <script>
     import BarChart from '../charts/BarChart'
     import {HTTP} from '../../http'
+    import moment from 'moment'
 
     export default {
         components: {
@@ -23,12 +24,9 @@
             fiveToEightHours: [],
             eightPlusHours: []
         }),
-        props: ['interval', 'site'],
+        props: ['params', 'interval'],
         watch: {
-            site: async function () {
-                await this.getData()
-            },
-            interval: async function () {
+            params: async function () {
                 await this.getData()
             }
         },
@@ -82,7 +80,7 @@
         },
         methods: {
             getData: async function () {
-                await HTTP.get('/presence/v1/dwell/' + this.interval.type + '/' + this.interval.interval + '?siteId=' + this.site)
+                await HTTP.get('/presence/v1/dwell/' + this.interval, { params: this.params })
                     .then(response => {
                         this.labels.length = 0
                         this.fiveToThirtyMinutes.length = 0

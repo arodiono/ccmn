@@ -10,6 +10,7 @@
 <script>
     import DoughnutChart from '../charts/DoughnutChart'
     import {HTTP} from '../../http'
+    import moment from 'moment'
 
     export default {
         components: {
@@ -22,12 +23,9 @@
             fiveToEightHours: null,
             eightPlusHours: null
         }),
-        props: ['interval', 'site'],
+        props: ['params'],
         watch: {
-            site: async function () {
-                await this.getData()
-            },
-            interval: async function () {
+            params: async function () {
                 await this.getData()
             }
         },
@@ -78,7 +76,7 @@
         },
         methods: {
             getData: async function () {
-                await HTTP.get('/presence/v1/dwell/count/' + this.interval.interval + '?siteId=' + this.site)
+                await HTTP.get('/presence/v1/dwell/count/', { params: this.params })
                     .then(response => {
                         this.fiveToThirtyMinutes = response.data.FIVE_TO_THIRTY_MINUTES
                         this.thirtyToSixtyMinutes = response.data.THIRTY_TO_SIXTY_MINUTES

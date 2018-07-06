@@ -9,13 +9,11 @@
 
 <script>
     import DoughnutChart from '../charts/DoughnutChart'
-    import {HTTP} from '../../http'
 
     export default {
         components: {
             DoughnutChart
         },
-        props: ['interval', 'site'],
         computed: {
             chartData: function () {
                 return {

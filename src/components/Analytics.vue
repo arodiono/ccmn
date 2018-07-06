@@ -1,20 +1,15 @@
-rve<template>
+<template>
     <div>
         <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-            <b-col cols="4">
+            <b-col cols="6">
                 <h1 class="h2">Analytics</h1>
-            </b-col>
-            <b-col cols="2">
-                <date-picker name="date" v-model="date" :config="config"></date-picker>
-            </b-col>
-            <b-col cols="2">
-                <date-picker name="date" v-model="date" :config="config"></date-picker>
             </b-col>
             <b-col cols="2">
                 <b-form-select v-model="site" :options="sitesOptions"/>
             </b-col>
-            <b-col cols="2">
-                <b-form-select v-model="interval" :options="intervalOptions"/>
+            <b-col cols="4">
+                <date-picker :input-class="'form-control'" :first-day-of-week="1" :not-after="new Date()" v-model="date"
+                             :lang="lang" range :shortcuts="shortcuts"></date-picker>
             </b-col>
         </div>
         <b-card-group deck class="mb-3">
@@ -37,193 +32,219 @@ rve<template>
             </b-card>
             <b-card header="Tomorrow" class="text-center" bg-variant="dark" text-variant="white">
                 <p class="card-text">
-                Visitors ~{{ nextDayVisitors }}
-                Connected ~{{ nextDayConnected }}
-                Passerby ~{{ nextDayPasserby }}
+                    Visitors ~{{ nextDayVisitors }}
+                    Connected ~{{ nextDayConnected }}
+                    Passerby ~{{ nextDayPasserby }}
                 </p>
             </b-card>
         </b-card-group>
         <b-row class="mt-5">
             <b-col cols="8">
-                <proximity-hourly v-bind:interval="interval" v-bind:site="site"></proximity-hourly>
+                <proximity-hourly v-bind:params="params" v-bind:interval="interval"></proximity-hourly>
             </b-col>
             <b-col cols="4">
-                <proximity-count v-bind:interval="interval" v-bind:site="site"></proximity-count>
+                <proximity-count v-bind:params="params"></proximity-count>
             </b-col>
         </b-row>
         <b-row class="mt-5">
             <b-col cols="8">
-                <dwell-time-hourly v-bind:interval="interval" v-bind:site="site"></dwell-time-hourly>
+                <dwell-time-hourly v-bind:params="params" v-bind:interval="interval"></dwell-time-hourly>
             </b-col>
             <b-col cols="4">
-                <dwell-time-count v-bind:interval="interval" v-bind:site="site"></dwell-time-count>
+                <dwell-time-count v-bind:params="params"></dwell-time-count>
             </b-col>
         </b-row>
         <b-row class="mt-5 mb-3">
             <b-col cols="8">
-                <repeat-visitors-hourly v-bind:interval="interval" v-bind:site="site"></repeat-visitors-hourly>
+                <repeat-visitors-hourly v-bind:params="params" v-bind:interval="interval"></repeat-visitors-hourly>
             </b-col>
             <b-col cols="4">
-                <repeat-visitors-count v-bind:interval="interval" v-bind:site="site"></repeat-visitors-count>
+                <repeat-visitors-count v-bind:params="params"></repeat-visitors-count>
             </b-col>
         </b-row>
     </div>
 </template>
 
 <script>
-    import {HTTP} from './../http'
-    import ProximityHourly from './widgets/ProximityHourly.vue'
-    import ProximityCount from './widgets/ProximityCount.vue'
-    import DwellTimeHourly from './widgets/DwellTimeHourly.vue'
-    import DwellTimeCount from './widgets/DwellTimeCount.vue'
-    import RepeatVisitorsHourly from './widgets/RepeatVisitorsHourly.vue'
-    import RepeatVisitorsCount from './widgets/RepeatVisitorsCount.vue'
-    import datePicker from 'vue-bootstrap-datetimepicker'
-    const ESS = require('exponential-smoothing-stream')
+  import { HTTP } from './../http'
+  import ProximityHourly from './widgets/ProximityHourly.vue'
+  import ProximityCount from './widgets/ProximityCount.vue'
+  import DwellTimeHourly from './widgets/DwellTimeHourly.vue'
+  import DwellTimeCount from './widgets/DwellTimeCount.vue'
+  import RepeatVisitorsHourly from './widgets/RepeatVisitorsHourly.vue'
+  import RepeatVisitorsCount from './widgets/RepeatVisitorsCount.vue'
+  import DatePicker from 'vue2-datepicker'
+  import moment from 'moment'
 
-    export default {
-        name: 'Analytics',
-        components: {
-            ProximityHourly,
-            ProximityCount,
-            DwellTimeHourly,
-            DwellTimeCount,
-            RepeatVisitorsHourly,
-            RepeatVisitorsCount,
-            datePicker
-        },
-        data() {
-            return {
-                date: false,
-                config: {
-                    format: 'YYYY-MM-DD',
-                    useCurrent: true,
-                    showTodayButton: true
-                },
-                interval: {
-                    interval: 'today',
-                    type: 'hourly'
-                },
-                intervalOptions: [
-                    {
-                        value: {
-                            interval: 'today',
-                            type: 'hourly'
-                        },
-                        text: 'Today'
-                    },
-                    {
-                        value: {
-                            interval: 'yesterday',
-                            type: 'hourly'
-                        },
-                        text: 'Yesterday'
-                    },
-                    {
-                        value: {
-                            interval: 'lastweek',
-                            type: 'daily'
-                        },
-                        text: 'Last week'
-                    },
-                    {
-                        value: {
-                            interval: 'lastmonth',
-                            type: 'daily'
-                        },
-                        text: 'Last month'
-                    },
-                ],
-                site: '',
-                sitesOptions: [],
-                totalVisitors: 'n/a',
-                dwellTime: 'n/a',
-                peakHour: 'n/a',
-                conversionRate: 'n/a',
-                topDevice: 'n/a',
-                totalConnected: null,
-                totalPasserby: null,
-                vShow: false,
-                dShow: false,
-                nextDayVisitors: '',
-                nextDayConnected: '',
-                nextDayPasserby: ''
+  const ESS = require('exponential-smoothing-stream')
+
+  export default {
+    name: 'Analytics',
+    components: {
+      ProximityHourly,
+      ProximityCount,
+      DwellTimeHourly,
+      DwellTimeCount,
+      RepeatVisitorsHourly,
+      RepeatVisitorsCount,
+      DatePicker
+    },
+    data () {
+      return {
+        date: [new Date(), new Date()],
+        interval: 'hourly',
+        shortcuts: [
+          {
+            text: 'Today',
+            onClick: () => {
+              this.date = [new Date(), new Date()]
+              this.interval = 'hourly'
             }
-        },
-        watch: {
-            site: function () {
-                this.getSummary()
-                this.calcNextDayVisitorsCount()
-            },
-            interval: function () {
-                this.getSummary()
+          },
+          {
+            text: 'Yesterday',
+            onClick: () => {
+              this.date = [new Date(Date.now() - 24 * 60 * 60 * 1000), new Date(Date.now() - 24 * 60 * 60 * 1000)]
+              this.interval = 'hourly'
             }
-        },
-        beforeCreate() {
-            let self = this
-            HTTP.get('/config/v1/sites')
-                .then(response => {
-                    response.data.forEach(function (el) {
-                        self.sitesOptions.push({
-                            value: el.aesUId,
-                            text: el.name
-                        })
-                    })
-                    self.site = self.sitesOptions[0].value
-                })
-                .catch(e => {
-                    console.dir(e) // eslint-disable-line no-console
-                })
-        },
-        methods: {
-            getSummary: function () {
-                let self = this
-                HTTP.get('/presence/v1/kpisummary/' + this.interval.interval + '?siteId=' + this.site)
-                    .then(response => {
-                        self.totalVisitors = response.data.totalVisitorCount
-                        self.dwellTime = Math.round(response.data.averageDwell) + ' mins'
-                        self.conversionRate = response.data.conversionRate + '%'
-                        self.peakHour = (response.data.peakSummary.peakHour + ':00') + '-' + (response.data.peakSummary.peakHour + 1) + ':00'
-                        self.topDevice = response.data.topManufacturers.name
-                        self.totalConnected = response.data.totalConnectedCount
-                        self.totalPasserby = response.data.totalPasserbyCount
-                    })
-            },
-            calcNextDayVisitorsCount: function () {
-                let weekData = {}
-                HTTP.get('/presence/v1/visitor/daily/lastweek?siteId=' + this.site)
-                    .then(response => {
-                        this.nextDayVisitors = this.forecast(response.data)
-                    })
-                HTTP.get('/presence/v1/connected/daily/lastweek?siteId=' + this.site)
-                    .then(response => {
-                        this.nextDayConnected = this.forecast(response.data)
-                    })
-                HTTP.get('/presence/v1/passerby/daily/lastweek?siteId=' + this.site)
-                    .then(response => {
-                        this.nextDayPasserby = this.forecast(response.data)
-                    })
-            },
-            forecast: function (obj) {
-                let data = Object.keys(obj).map(key => obj[key])
-
-                let a = new ESS({
-                    smoothingFactor: 2 / (data.length + 1),
-                    initialStrategy: new ESS.strategies.InitialStrategyMedian(data.length)
-                });
-                let valueList = [];
-
-                a.on('data', function (data) {
-                    valueList.push(data);
-                });
-                data.forEach(el => {
-                    a.write(parseInt(el));
-                })
-                a.end();
-
-                return Math.round(valueList[valueList.length - 1])
+          },
+          {
+            text: 'Last week',
+            onClick: () => {
+              this.date = [new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), new Date()]
+              this.interval = 'daily'
             }
-
+          },
+          {
+            text: 'Last month',
+            onClick: () => {
+              this.date = [new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), new Date()]
+              this.interval = 'daily'
+            }
+          }
+        ],
+        lang: {
+          days: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+          months: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+          pickers: ['next 7 days', 'next 30 days', 'previous 7 days', 'previous 30 days'],
+          placeholder: {
+            date: 'Select Date',
+            dateRange: 'Select Date Range'
+          }
+        },
+        site: '',
+        sitesOptions: [],
+        totalVisitors: 'n/a',
+        dwellTime: 'n/a',
+        peakHour: 'n/a',
+        conversionRate: 'n/a',
+        topDevice: 'n/a',
+        totalConnected: null,
+        totalPasserby: null,
+        vShow: false,
+        dShow: false,
+        nextDayVisitors: '',
+        nextDayConnected: '',
+        nextDayPasserby: ''
+      }
+    },
+    computed: {
+      params: function () {
+        let params = {
+          siteId: this.site,
+          startDate: moment(this.date[0]).format('YYYY-MM-DD'),
+          endDate: moment(this.date[1]).format('YYYY-MM-DD'),
         }
+        if (moment(this.date[0]).format('YYYY-MM-DD') === moment(this.date[1]).format('YYYY-MM-DD')) {
+          params.date = moment(this.date[0]).format('YYYY-MM-DD')
+        }
+        return params
+      },
+    },
+    watch: {
+      site: function () {
+        this.getSummary()
+        this.calcNextDayVisitorsCount()
+      },
+      date: function () {
+        this.getSummary()
+      }
+    },
+    beforeCreate () {
+      let self = this
+      HTTP.get('/config/v1/sites')
+        .then(response => {
+          response.data.forEach(function (el) {
+            self.sitesOptions.push({
+              value: el.aesUId,
+              text: el.name
+            })
+          })
+          self.site = self.sitesOptions[0].value
+        })
+        .catch(e => {
+          console.dir(e) // eslint-disable-line no-console
+        })
+    },
+    methods: {
+      getSummary: function () {
+        let self = this
+        HTTP.get('/presence/v1/kpisummary/', {params: this.params})
+          .then(response => {
+            self.totalVisitors = response.data.totalVisitorCount ? response.data.totalVisitorCount : 0
+            self.dwellTime = Math.round(response.data.averageDwell) + ' mins'
+            self.conversionRate = response.data.conversionRate + '%'
+
+            let interval = (self.date[1] - self.date[0]) / (1000 * 60 * 60 * 24)
+            if (interval >= 7 && interval < 30) {
+              self.peakHour = response.data.peakWeekSummary.peakHour + ':00' + '-' + (response.data.peakWeekSummary.peakHour + 1) + ':00'
+            }
+            else if (interval >= 30) {
+              self.peakHour = response.data.peakMonthSummary.peakHour + ':00' + '-' + (response.data.peakMonthSummary.peakHour + 1) + ':00'
+            }
+            else {
+              self.peakHour = response.data.peakSummary ? (response.data.peakSummary.peakHour + ':00') + '-' + (response.data.peakSummary.peakHour + 1) + ':00' : 'n/a'
+            }
+            self.topDevice = response.data.topManufacturers.name
+            self.totalConnected = response.data.totalConnectedCount
+            self.totalPasserby = response.data.totalPasserbyCount
+          })
+      },
+      calcNextDayVisitorsCount: function () {
+        let weekData = {}
+        HTTP.get('/presence/v1/visitor/daily/lastweek?siteId=' + this.site)
+          .then(response => {
+            this.nextDayVisitors = this.forecast(response.data)
+          })
+        HTTP.get('/presence/v1/connected/daily/lastweek?siteId=' + this.site)
+          .then(response => {
+            this.nextDayConnected = this.forecast(response.data)
+          })
+        HTTP.get('/presence/v1/passerby/daily/lastweek?siteId=' + this.site)
+          .then(response => {
+            this.nextDayPasserby = this.forecast(response.data)
+          })
+      },
+      forecast: function (obj) {
+        let data = Object.keys(obj).map(key => obj[key])
+
+        let a = new ESS({
+          smoothingFactor: 2 / (data.length + 1),
+          initialStrategy: new ESS.strategies.InitialStrategyMedian(data.length)
+        })
+        let valueList = []
+
+        a.on('data', function (data) {
+          valueList.push(data)
+        })
+        data.forEach(el => {
+          a.write(parseInt(el))
+        })
+        a.end()
+
+        return Math.round(valueList[valueList.length - 1])
+      }
+
     }
+  }
 </script>
