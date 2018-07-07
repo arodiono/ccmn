@@ -62,6 +62,7 @@
                 <repeat-visitors-count v-bind:params="params"></repeat-visitors-count>
             </b-col>
         </b-row>
+        <session-day-correlation v-bind:site="site"></session-day-correlation>
     </div>
 </template>
 
@@ -73,6 +74,7 @@
   import DwellTimeCount from './widgets/DwellTimeCount.vue'
   import RepeatVisitorsHourly from './widgets/RepeatVisitorsHourly.vue'
   import RepeatVisitorsCount from './widgets/RepeatVisitorsCount.vue'
+  import SessionDayCorrelation from './widgets/SessionDayCorrelation.vue'
   import DatePicker from 'vue2-datepicker'
   import moment from 'moment'
 
@@ -87,7 +89,9 @@
       DwellTimeCount,
       RepeatVisitorsHourly,
       RepeatVisitorsCount,
-      DatePicker
+      DatePicker,
+      SessionDayCorrelation
+
     },
     data () {
       return {
