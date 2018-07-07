@@ -7,56 +7,45 @@
                 MAC: {{newUser.macAddress}} now is on the {{currentFloorParse(newUser.mapInfo.mapHierarchyString)}}.
             </b-alert>
         </div>
+        <br>
+        <b-row>
+            <b-col cols="4">
+                <b-button-group v-if="floors">
+                    <b-button v-for="(floor, index) in floors" @click="showMap(floor, true)" :key="index">
+                        {{floor.info.floorNumber}}
+                    </b-button>
+                </b-button-group>
+            </b-col>
+            <b-col cols="4">
+                <h1 class="h2">Total users: {{users.length}} / At Floor: {{currentFloorUsers.length}}</h1>
+            </b-col>
+            <b-col cols="4">
+                <b-form-input type="text"
+                              list="macAddress"
+                              @change="showSearchedUser"
+                              placeholder="Search by MAC-address">
+                </b-form-input>
+                <datalist id="macAddress">
+                    <option v-for="(user, index) in currentFloorUsers" v-bind:value="user.macAddress" :key="index"></option>
+                </datalist>
+            </b-col>
+        </b-row>
         <b-col cols="12" v-if="imageURL">
-            <br><br>
-            <b-button-group v-if="floors">
-                <b-button v-for="(floor, index) in floors" @click="showMap(floor, true)" :key="index">
-                    {{floor.info.floorNumber}}
-                </b-button>
-            </b-button-group>
-            <br><br>
             <div class="floor-map">
                 <b-img id="map" :src="imageURL" fluid></b-img>
                 <div v-for="(user, index) in currentFloorUsers"
                      :class="{'pin-associated': (user.dot11Status === 'ASSOCIATED'),
                                 'pin-unassociated': (user.dot11Status !== 'ASSOCIATED')}"
-                     @click="showModalUser(user, index, false)"
+                     @click="showModalUser(user, index)"
                      :style="setStyles(user.styles.x, user.styles.y, index)">
                 </div>
-                <div v-for="(endPoint, index) in currentFloorAccessPoints" class="endpoint"
+                <div v-for="endPoint in currentFloorAccessPoints" class="endpoint"
                      :style="setStyles(relativeX(endPoint.mapCoordinates.x), relativeY(endPoint.mapCoordinates.y), -1)">
                 </div>
             </div>
         </b-col>
         <br>
-        <b-col cols="12">
-            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-                <b-col cols="6">
-                    <h1 class="h2">Total users: {{totalUsers}}</h1>
-                </b-col>
-                <b-col cols="6">
-                    <b-form-input v-model="searchedMac"
-                                  type="text"
-                                  placeholder="Search by entering mac-address">
-                    </b-form-input>
-                </b-col>
-            </div>
-            <br>
-            <b-list-group v-if="users.length > 0">
-                <div v-for="(user, index) in filteredUsers" :key="index">
-                    <b-list-group-item
-                            button
-                            @click="showModalUser(user, index, true)"
-                            :class="{active: index === listIndex}"
-                            :id="'mac-' + index"
-                            v-bind:data-index="index"
-                    >
-                        {{user.macAddress}}
-                    </b-list-group-item>
-                </div>
-            </b-list-group>
-        </b-col>
-        <b-modal v-model="modalShow" ref="modal" size="md" centered hide-footer title="User info">
+        <b-modal v-model="modalShow" ref="modal" size="md" hide-footer title="User info">
             <div v-if="mapCurrentUser">
                 <p class="my-4">Mac Address: {{mapCurrentUser.macAddress}}</p>
                 <p class="my-4">Status: {{mapCurrentUser.dot11Status}}</p>
@@ -75,10 +64,8 @@
                 <p class="my-4">Current Floor: {{currentFloorParse(mapCurrentUser.mapInfo.mapHierarchyString)}}</p>
                 <p class="my-4">Last Seen: {{getLastSeen(mapCurrentUser)}} ago</p>
                 <p class="my-4">Currently Tracked: {{mapCurrentUser.currentlyTracked}}</p>
-                <p class="my-4">Manufacturer: {{mapCurrentUser.manufacturer === null ? 'N/A' :
-                    mapCurrentUser.manufacturer}}</p>
-                <p class="my-4">Connected AP: {{mapCurrentUser.apMacAddress === '' ? 'Unknown' :
-                    mapCurrentUser.apMacAddress}}</p>
+                <p class="my-4">Manufacturer: {{mapCurrentUser.manufacturer === null ? 'N/A' : mapCurrentUser.manufacturer}}</p>
+                <p class="my-4">Connected AP: {{mapCurrentUser.apMacAddress === '' ? 'Unknown' : mapCurrentUser.apMacAddress}}</p>
                 <p class="my-4">Detecting Controllers: {{mapCurrentUser.detectingControllers}}</p>
                 <p class="my-4">SSID: {{mapCurrentUser.ssId === '' ? 'Unknown' : mapCurrentUser.ssId}}</p>
                 <p class="my-4">Username: {{mapCurrentUser.userName === '' ? 'Unknown' : mapCurrentUser.userName}}</p>
@@ -86,7 +73,7 @@
                 <p class="my-4">Bytes Received: {{mapCurrentUser.bytesReceived}}</p>
                 <p class="my-4">Bytes Sent: {{mapCurrentUser.bytesSent}}</p>
             </div>
-            <b-btn class="mt-3" variant="outline-danger" block @click="hideModal">Close Me</b-btn>
+            <b-btn class="mt-3" variant="outline-danger" block @click="modalShow = !modalShow">Close Me</b-btn>
         </b-modal>
     </div>
 </template>
@@ -104,15 +91,10 @@
                 diff: [],
                 dismissSecs: 3,
                 dismissCountDown: 0,
-                totalUsers: 0,
                 chosenIndex: null,
-                listIndex: null,
-                showCollapse: false,
                 imageURL: null,
                 modalShow: false,
                 floors: [],
-                currentFloorUsers: [],
-                currentFloorAccessPoints: [],
                 currentFloor: null,
                 currentFloorIndex: 0,
                 mapWidth: 0,
@@ -123,24 +105,54 @@
             }
         },
         watch: {
-            users(oldValue, newValue) {
+            users(newValue) {
                 this.showMap(this.currentFloor, false);
             },
-            modalShow(oldValue, newValue) {
-                if (newValue === true) {
-                    this.listIndex = null;
+            modalShow(newValue) {
+                if (newValue === false) {
+                    this.chosenIndex = null;
                 }
-            }
-        },
-        computed: {
-            filteredUsers: function () {
-                let vm = this;
-                return this.users.filter(function (item) {
-                    return item.macAddress.toLowerCase().indexOf(vm.searchedMac.toLowerCase()) !== -1
-                })
+            },
+            imageURL(newValue, oldValue) {
+                if (oldValue === null) {
+                    this.getUsers();
+                    setInterval(() => {
+                        this.getUsers();
+                    }, 4000);
+                }
             },
         },
+        computed: {
+            currentFloorUsers() {
+                let result = [];
+                this.users.forEach(el => {
+                    if (el.mapInfo.floorRefId === this.currentFloor.info.aesUidString) {
+                        el.styles = {};
+                        el.styles.x = this.relativeX(el.mapCoordinate.x);
+                        el.styles.y = this.relativeY(el.mapCoordinate.y);
+                        result.push(el)
+                    }
+                });
+                return result;
+            },
+            currentFloorAccessPoints() {
+                return this.currentFloor.info.accessPoints;
+            }
+        },
         methods: {
+            showSearchedUser: async function (el) {
+                let user = this.users.find(x => x.macAddress === el);
+                if (user) {
+                    let floor = this.floors.find(el => el.info.aesUidString === user.mapInfo.floorRefId);
+                    await this.showMap(floor, true);
+                    for (let i = 0; i < this.currentFloorUsers.length; i++) {
+                        if (user.macAddress === this.currentFloorUsers[i].macAddress) {
+                            this.showModalUser(user, i);
+                            break;
+                        }
+                    }
+                }
+            },
             setStyles(x, y, index) {
                 let styles = {};
                 if (index === this.chosenIndex) {
@@ -168,27 +180,10 @@
                 let relative = ((this.mapHeight * y) / this.currentFloor.info.dimension.length) / this.mapHeight;
                 return relative * 100
             },
-            showModalUser: async function(user, index, searched) {
-                if (searched) {
-                    let floor = this.floors.find(el => el.info.aesUidString === user.mapInfo.floorRefId);
-                    await this.showMap(floor, true);
-                    this.listIndex = index;
-                    for (let i = 0; i < this.currentFloorUsers.length; i++) {
-                        if (user.macAddress === this.currentFloorUsers[i].macAddress) {
-                            this.chosenIndex = i;
-                            break;
-                        }
-                    }
-                } else {
-                    this.chosenIndex = index;
-                }
+            showModalUser: async function (user, index) {
+                this.chosenIndex = index;
                 this.mapCurrentUser = user;
                 this.$refs.modal.show();
-            },
-            hideModal() {
-                this.listIndex = null;
-                this.chosenIndex = null;
-                this.$refs.modal.hide();
             },
             getLastSeen(user) {
                 let now = new Date().getTime() / 1000;
@@ -215,22 +210,11 @@
             showMap: async function (floor, clicked) {
                 if (floor != null) {
                     if (clicked) {
-                        this.listIndex = null;
                         this.chosenIndex = null;
                     }
                     this.currentFloor = floor;
                     this.imageURL = floor.imageData;
                     await this.getMapSize();
-                    this.currentFloorUsers = [];
-                    this.currentFloorAccessPoints = floor.info.accessPoints;
-                    await this.users.forEach(el => {
-                        if (el.mapInfo.floorRefId === floor.info.aesUidString) {
-                            el.styles = {};
-                            el.styles.x = this.relativeX(el.mapCoordinate.x);
-                            el.styles.y = this.relativeY(el.mapCoordinate.y);
-                            this.currentFloorUsers.push(el)
-                        }
-                    });
                 }
             },
             retrieveFloorImage(floor) {
@@ -311,7 +295,6 @@
                             }
                         }
                         vm.users = arr;
-                        vm.totalUsers = vm.users.length;
                     })
                     .catch(e => {
                         console.log(e)
@@ -326,16 +309,13 @@
         },
         created() {
             this.getAllMaps();
-            setTimeout(() => this.getUsers(), 500);
-            setInterval(() => {
-                this.getUsers();
-            }, 5000);
         },
     }
 </script>
 
 <style scoped>
     .floor-map {
+        margin: 0 auto;
         position: relative;
         max-width: 1765px;
         max-height: 897px;
