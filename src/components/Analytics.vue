@@ -63,6 +63,8 @@
             </b-col>
         </b-row>
         <connected-day-correlation v-bind:site="site"></connected-day-correlation>
+        <users-dwell-level-correlation v-bind:site="site"></users-dwell-level-correlation>
+        <users-dwell-duration-by-dwell-level-correlation v-bind:site="site"></users-dwell-duration-by-dwell-level-correlation>
     </div>
 </template>
 
@@ -75,6 +77,8 @@
   import RepeatVisitorsHourly from './widgets/RepeatVisitorsHourly.vue'
   import RepeatVisitorsCount from './widgets/RepeatVisitorsCount.vue'
   import ConnectedDayCorrelation from './widgets/ConnectedDayCorrelation.vue'
+  import UsersDwellLevelCorrelation from './widgets/UsersDwellLevelCorrelation.vue'
+  import UsersDwellDurationByDwellLevelCorrelation from './widgets/UsersDwellDurationByDwellLevelCorrelation'
   import DatePicker from 'vue2-datepicker'
   import moment from 'moment'
 
@@ -83,6 +87,7 @@
   export default {
     name: 'Analytics',
     components: {
+        UsersDwellDurationByDwellLevelCorrelation,
       ProximityHourly,
       ProximityCount,
       DwellTimeHourly,
@@ -90,8 +95,8 @@
       RepeatVisitorsHourly,
       RepeatVisitorsCount,
       DatePicker,
-      ConnectedDayCorrelation
-
+      ConnectedDayCorrelation,
+      UsersDwellLevelCorrelation
     },
     data () {
       return {
@@ -158,7 +163,7 @@
           siteId: this.site,
           startDate: moment(this.date[0]).format('YYYY-MM-DD'),
           endDate: moment(this.date[1]).format('YYYY-MM-DD'),
-        }
+        };
         if (moment(this.date[0]).format('YYYY-MM-DD') === moment(this.date[1]).format('YYYY-MM-DD')) {
           params.date = moment(this.date[0]).format('YYYY-MM-DD')
         }
@@ -167,7 +172,7 @@
     },
     watch: {
       site: function () {
-        this.getSummary()
+        this.getSummary();
         this.calcNextDayVisitorsCount()
       },
       date: function () {
@@ -175,7 +180,7 @@
       }
     },
     beforeCreate () {
-      let self = this
+      let self = this;
       HTTP.get('/config/v1/sites')
         .then(response => {
           response.data.forEach(function (el) {
@@ -183,7 +188,7 @@
               value: el.aesUId,
               text: el.name
             })
-          })
+          });
           self.site = self.sitesOptions[0].value
         })
         .catch(e => {
@@ -199,7 +204,8 @@
             self.dwellTime = Math.round(response.data.averageDwell) + ' mins'
             self.conversionRate = response.data.conversionRate + '%'
 
-            let interval = (self.date[1] - self.date[0]) / (1000 * 60 * 60 * 24)
+            let interval = (self.date[1] - self.date[0]) / (1000 * 60 * 60 * 24);
+            console.log(interval);
             if (interval >= 7 && interval < 30) {
               self.peakHour = response.data.peakWeekSummary.peakHour + ':00' + '-' + (response.data.peakWeekSummary.peakHour + 1) + ':00'
             }
@@ -230,21 +236,21 @@
           })
       },
       forecast: function (obj) {
-        let data = Object.keys(obj).map(key => obj[key])
+        let data = Object.keys(obj).map(key => obj[key]);
 
         let a = new ESS({
           smoothingFactor: 2 / (data.length + 1),
           initialStrategy: new ESS.strategies.InitialStrategyMedian(data.length)
-        })
-        let valueList = []
+        });
+        let valueList = [];
 
         a.on('data', function (data) {
           valueList.push(data)
-        })
+        });
         data.forEach(el => {
           a.write(parseInt(el))
-        })
-        a.end()
+        });
+        a.end();
 
         return Math.round(valueList[valueList.length - 1])
       }

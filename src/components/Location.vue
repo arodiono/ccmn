@@ -17,16 +17,20 @@
                 </b-button-group>
             </b-col>
             <b-col cols="4">
-                <h1 class="h2">Total users: {{users.length}} / At Floor: {{currentFloorUsers.length}}</h1>
+                <h1 class="h4">Total users: {{users.length}} / At Floor: {{currentFloorUsers.length}}</h1>
             </b-col>
             <b-col cols="4">
                 <b-form-input type="text"
                               list="macAddress"
+                              id="macAddressInput"
                               @change="showSearchedUser"
                               placeholder="Search by MAC-address">
                 </b-form-input>
                 <datalist id="macAddress">
-                    <option v-for="(user, index) in currentFloorUsers" v-bind:value="user.macAddress" :key="index"></option>
+                    <option v-for="(user, index) in currentFloorUsers"
+                            v-bind:value="user.macAddress"
+                            :key="index"
+                    ></option>
                 </datalist>
             </b-col>
         </b-row>
@@ -62,10 +66,13 @@
                 <p class="my-4">Coordinates: x = {{mapCurrentUser.mapCoordinate.x}}, y =
                     {{mapCurrentUser.mapCoordinate.y}}</p>
                 <p class="my-4">Current Floor: {{currentFloorParse(mapCurrentUser.mapInfo.mapHierarchyString)}}</p>
-                <p class="my-4">Last Seen: {{getLastSeen(mapCurrentUser)}} ago</p>
+                <p class="my-4">First Seen: {{getSeenTime(mapCurrentUser.statistics.firstLocatedTime)}} ago</p>
+                <p class="my-4">Last Seen: {{getSeenTime(mapCurrentUser.statistics.lastLocatedTime)}} ago</p>
                 <p class="my-4">Currently Tracked: {{mapCurrentUser.currentlyTracked}}</p>
-                <p class="my-4">Manufacturer: {{mapCurrentUser.manufacturer === null ? 'N/A' : mapCurrentUser.manufacturer}}</p>
-                <p class="my-4">Connected AP: {{mapCurrentUser.apMacAddress === '' ? 'Unknown' : mapCurrentUser.apMacAddress}}</p>
+                <p class="my-4">Manufacturer: {{mapCurrentUser.manufacturer === null ? 'N/A' :
+                    mapCurrentUser.manufacturer}}</p>
+                <p class="my-4">Connected AP: {{mapCurrentUser.apMacAddress === '' ? 'Unknown' :
+                    mapCurrentUser.apMacAddress}}</p>
                 <p class="my-4">Detecting Controllers: {{mapCurrentUser.detectingControllers}}</p>
                 <p class="my-4">SSID: {{mapCurrentUser.ssId === '' ? 'Unknown' : mapCurrentUser.ssId}}</p>
                 <p class="my-4">Username: {{mapCurrentUser.userName === '' ? 'Unknown' : mapCurrentUser.userName}}</p>
@@ -89,7 +96,7 @@
             return {
                 users: [],
                 diff: [],
-                dismissSecs: 3,
+                dismissSecs: 6,
                 dismissCountDown: 0,
                 chosenIndex: null,
                 imageURL: null,
@@ -105,7 +112,7 @@
             }
         },
         watch: {
-            users(newValue) {
+            users() {
                 this.showMap(this.currentFloor, false);
             },
             modalShow(newValue) {
@@ -118,7 +125,7 @@
                     this.getUsers();
                     setInterval(() => {
                         this.getUsers();
-                    }, 4000);
+                    }, 10000);
                 }
             },
         },
@@ -185,12 +192,16 @@
                 this.mapCurrentUser = user;
                 this.$refs.modal.show();
             },
-            getLastSeen(user) {
+            getSeenTime(time) {
                 let now = new Date().getTime() / 1000;
                 let result = '';
-                let userDate = new Date(user.statistics.lastLocatedTime).getTime() / 1000;
+                let userDate = new Date(time).getTime() / 1000;
                 let differ = now - userDate;
-                let minutes = Math.floor(differ / 60);
+                let hours = Math.floor((differ / 3600));
+                if (hours !== 0) {
+                    result += hours + 'h ';
+                }
+                let minutes = Math.floor((differ % 3600) / 60);
                 if (minutes !== 0) {
                     result += minutes + 'm ';
                 }
@@ -274,7 +285,10 @@
                         dict.length = dict.length - 1;
                     }
                 }
-                dict.forEach(el => result.push(el));
+                let tmp = Object.entries(dict);
+                tmp.forEach(el => {
+                    result.push(el[1]);
+                });
                 return result;
             },
             getUsers() {
@@ -289,7 +303,6 @@
                             vm.diff = vm.findNew(arr);
                         }
                         if (vm.diff.length > 0) {
-                            console.log('New users!!!', vm.diff);
                             for (let i = 0; i < vm.diff.length; i++) {
                                 vm.showAlert();
                             }

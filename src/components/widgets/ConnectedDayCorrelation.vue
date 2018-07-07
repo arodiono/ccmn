@@ -17,7 +17,7 @@
       BarChart
     },
     data: () => ({
-      connectedU: []
+      connectedDays: []
     }),
     props: ['site'],
     watch: {
@@ -34,7 +34,7 @@
               label: 'Connected users',
               backgroundColor: 'rgba(40,167,69,0.5)',
               borderColor: '#28a745',
-              data: this.connectedU
+              data: this.connectedDays
             },
           ]
         }
@@ -44,7 +44,7 @@
           maintainAspectRatio: false,
           title: {
             display: true,
-            text: 'Connected users by day of week'
+            text: 'Daily Correlation Users by Connected Users'
           }
         }
       }
@@ -60,15 +60,16 @@
           }
         })
           .then(response => {
-            let i = 0
-            this.connectedU = [0, 0, 0, 0, 0, 0, 0]
+              console.log(response.data);
+            let i = 0;
+            this.connectedDays = [0, 0, 0, 0, 0, 0, 0];
             for (let key in response.data) {
-              this.connectedU[moment(key).day()] += response.data[key]
+              this.connectedDays[moment(key).day()] += response.data[key];
               i++
             }
 
-            Object.keys(this.connectedU).map((key, index) => {
-              this.connectedU[key] /= i
+            Object.keys(this.connectedDays).map((key, index) => {
+              this.connectedDays[key] = Math.floor(this.connectedDays[key] / (i / 7));
             })
           })
       }
