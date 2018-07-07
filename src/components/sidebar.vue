@@ -8,10 +8,6 @@
             <b-nav vertical class="w-25">
                 <b-nav-item to="/location">Location</b-nav-item>
             </b-nav>
-            <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted"><span>Other</span></h6>
-            <b-nav vertical class="w-25">
-                <b-nav-item disabled>Disabled</b-nav-item>
-            </b-nav>
         </div>
     </nav>
 </template>

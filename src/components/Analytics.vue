@@ -166,7 +166,7 @@
           startDate: moment(this.date[0]).format('YYYY-MM-DD'),
           endDate: moment(this.date[1]).format('YYYY-MM-DD'),
         };
-        if (moment(this.date[0]).format('YYYY-MM-DD') === moment(this.date[1]).format('YYYY-MM-DD')) {
+        if (moment(this.date[0]).format('YYYY-MM-DD') === moment(this.date[1]).format('YYYY-MM-DD') || this.interval === 'hourly') {
           params.date = moment(this.date[0]).format('YYYY-MM-DD')
         }
         return params
@@ -208,10 +208,10 @@
 
             let interval = (self.date[1] - self.date[0]) / (1000 * 60 * 60 * 24);
             if (interval >= 7 && interval < 30) {
-              self.peakHour = response.data.peakWeekSummary.peakHour + ':00' + '-' + (response.data.peakWeekSummary.peakHour + 1) + ':00'
+              self.peakHour = response.data.peakWeekSummary ? (response.data.peakWeekSummary.peakHour + ':00') + '-' + (response.data.peakWeekSummary.peakHour + 1) + ':00' : 'n/a'
             }
             else if (interval >= 30) {
-              self.peakHour = response.data.peakMonthSummary.peakHour + ':00' + '-' + (response.data.peakMonthSummary.peakHour + 1) + ':00'
+              self.peakHour = response.data.peakMonthSummary ? (response.data.peakMonthSummary.peakHour + ':00') + '-' + (response.data.peakMonthSummary.peakHour + 1) + ':00' : 'n/a'
             }
             else {
               self.peakHour = response.data.peakSummary ? (response.data.peakSummary.peakHour + ':00') + '-' + (response.data.peakSummary.peakHour + 1) + ':00' : 'n/a'
