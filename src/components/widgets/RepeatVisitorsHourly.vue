@@ -10,7 +10,6 @@
 <script>
   import LineChart from '../charts/LineChart'
   import { HTTP } from '../../http'
-  import moment from 'moment'
 
   export default {
     components: {
@@ -83,19 +82,19 @@
 
         await HTTP.get('/presence/v1/repeatvisitors/' + this.interval, { params: this.params })
           .then(response => {
-            this.labels.length = 0
-            this.daily.length = 0
-            this.weekly.length = 0
-            this.occasional.length = 0
-            this.firstTime.length = 0
-            this.yesterday.length = 0
+            this.labels.length = 0;
+            this.daily.length = 0;
+            this.weekly.length = 0;
+            this.occasional.length = 0;
+            this.firstTime.length = 0;
+            this.yesterday.length = 0;
             for (let key in response.data) {
               if (response.data.hasOwnProperty(key)) {
-                this.labels.push(key)
-                this.daily.push(response.data[key].DAILY ? response.data[key].DAILY : 0)
-                this.weekly.push(response.data[key].WEEKLY ? response.data[key].WEEKLY : 0)
-                this.occasional.push(response.data[key].OCCASIONAL ? response.data[key].OCCASIONAL : 0)
-                this.firstTime.push(response.data[key].FIRST_TIME ? response.data[key].FIRST_TIME : 0)
+                this.labels.push(key);
+                this.daily.push(response.data[key].DAILY ? response.data[key].DAILY : 0);
+                this.weekly.push(response.data[key].WEEKLY ? response.data[key].WEEKLY : 0);
+                this.occasional.push(response.data[key].OCCASIONAL ? response.data[key].OCCASIONAL : 0);
+                this.firstTime.push(response.data[key].FIRST_TIME ? response.data[key].FIRST_TIME : 0);
                 this.yesterday.push(response.data[key].YESTERDAY ? response.data[key].YESTERDAY : 0)
               }
             }

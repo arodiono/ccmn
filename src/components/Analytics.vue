@@ -33,7 +33,9 @@
             <b-card header="Tomorrow" class="text-center" bg-variant="dark" text-variant="white">
                 <p class="card-text">
                     Visitors ~{{ nextDayVisitors }}
+                    <br>
                     Connected ~{{ nextDayConnected }}
+                    <br>
                     Passerby ~{{ nextDayPasserby }}
                 </p>
             </b-card>
@@ -205,7 +207,6 @@
             self.conversionRate = response.data.conversionRate + '%'
 
             let interval = (self.date[1] - self.date[0]) / (1000 * 60 * 60 * 24);
-            console.log(interval);
             if (interval >= 7 && interval < 30) {
               self.peakHour = response.data.peakWeekSummary.peakHour + ':00' + '-' + (response.data.peakWeekSummary.peakHour + 1) + ':00'
             }
@@ -221,7 +222,6 @@
           })
       },
       calcNextDayVisitorsCount: function () {
-        let weekData = {}
         HTTP.get('/presence/v1/visitor/daily/lastweek?siteId=' + this.site)
           .then(response => {
             this.nextDayVisitors = this.forecast(response.data)

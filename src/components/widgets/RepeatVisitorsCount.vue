@@ -10,7 +10,6 @@
 <script>
   import DoughnutChart from '../charts/DoughnutChart'
   import { HTTP } from '../../http'
-  import moment from 'moment'
 
   export default {
     components: {
@@ -78,10 +77,10 @@
       getData: async function () {
         await HTTP.get('/presence/v1/repeatvisitors/count/', { params: this.params })
           .then(response => {
-            this.daily = response.data.DAILY
-            this.weekly = response.data.WEEKLY
-            this.occasional = response.data.OCCASIONAL
-            this.firstTime = response.data.FIRST_TIME
+            this.daily = response.data.DAILY;
+            this.weekly = response.data.WEEKLY;
+            this.occasional = response.data.OCCASIONAL;
+            this.firstTime = response.data.FIRST_TIME;
             this.yesterday = response.data.YESTERDAY
           })
       }

@@ -16,22 +16,8 @@
                     </b-button>
                 </b-button-group>
             </b-col>
-            <b-col cols="4">
+            <b-col cols="8">
                 <h1 class="h4">Total users: {{users.length}} / At Floor: {{currentFloorUsers.length}}</h1>
-            </b-col>
-            <b-col cols="4">
-                <b-form-input type="text"
-                              list="macAddress"
-                              id="macAddressInput"
-                              @change="showSearchedUser"
-                              placeholder="Search by MAC-address">
-                </b-form-input>
-                <datalist id="macAddress">
-                    <option v-for="(user, index) in currentFloorUsers"
-                            v-bind:value="user.macAddress"
-                            :key="index"
-                    ></option>
-                </datalist>
             </b-col>
         </b-row>
         <b-col cols="12" v-if="imageURL">
@@ -47,6 +33,25 @@
                      :style="setStyles(relativeX(endPoint.mapCoordinates.x), relativeY(endPoint.mapCoordinates.y), -1)">
                 </div>
             </div>
+        </b-col>
+        <br>
+        <b-col cols="12">
+            <b-form-input type="text"
+                          v-model="searchedMac"
+                          placeholder="Search by MAC-address">
+            </b-form-input>
+            <b-list-group v-if="users.length > 0">
+                <div v-for="(user, index) in filteredUsers" :key="index">
+                    <b-list-group-item
+                            button
+                            @click="showSearchedUser(user, index)"
+                            :class="{active: index === listIndex}"
+                            v-bind:data-index="index"
+                    >
+                        {{user.macAddress}}
+                    </b-list-group-item>
+                </div>
+            </b-list-group>
         </b-col>
         <br>
         <b-modal v-model="modalShow" ref="modal" size="md" hide-footer title="User info">
@@ -68,7 +73,6 @@
                 <p class="my-4">Current Floor: {{currentFloorParse(mapCurrentUser.mapInfo.mapHierarchyString)}}</p>
                 <p class="my-4">First Seen: {{getSeenTime(mapCurrentUser.statistics.firstLocatedTime)}} ago</p>
                 <p class="my-4">Last Seen: {{getSeenTime(mapCurrentUser.statistics.lastLocatedTime)}} ago</p>
-                <p class="my-4">Currently Tracked: {{mapCurrentUser.currentlyTracked}}</p>
                 <p class="my-4">Manufacturer: {{mapCurrentUser.manufacturer === null ? 'N/A' :
                     mapCurrentUser.manufacturer}}</p>
                 <p class="my-4">Connected AP: {{mapCurrentUser.apMacAddress === '' ? 'Unknown' :
@@ -96,9 +100,11 @@
             return {
                 users: [],
                 diff: [],
-                dismissSecs: 6,
+                interval: null,
+                dismissSecs: 5,
                 dismissCountDown: 0,
                 chosenIndex: null,
+                listIndex: null,
                 imageURL: null,
                 modalShow: false,
                 floors: [],
@@ -118,18 +124,26 @@
             modalShow(newValue) {
                 if (newValue === false) {
                     this.chosenIndex = null;
+                    this.listIndex = null;
                 }
             },
             imageURL(newValue, oldValue) {
                 if (oldValue === null) {
                     this.getUsers();
-                    setInterval(() => {
+                    clearInterval(this.interval);
+                    this.interval = setInterval(() => {
                         this.getUsers();
-                    }, 10000);
+                    }, 5000);
                 }
             },
         },
         computed: {
+            filteredUsers: function () {
+                let vm = this;
+                return this.users.filter(function (item) {
+                    return item.macAddress.toLowerCase().indexOf(vm.searchedMac.toLowerCase()) !== -1
+                })
+            },
             currentFloorUsers() {
                 let result = [];
                 this.users.forEach(el => {
@@ -147,16 +161,14 @@
             }
         },
         methods: {
-            showSearchedUser: async function (el) {
-                let user = this.users.find(x => x.macAddress === el);
-                if (user) {
-                    let floor = this.floors.find(el => el.info.aesUidString === user.mapInfo.floorRefId);
-                    await this.showMap(floor, true);
-                    for (let i = 0; i < this.currentFloorUsers.length; i++) {
-                        if (user.macAddress === this.currentFloorUsers[i].macAddress) {
-                            this.showModalUser(user, i);
-                            break;
-                        }
+            showSearchedUser: async function (user, index) {
+                let floor = this.floors.find(el => el.info.aesUidString === user.mapInfo.floorRefId);
+                await this.showMap(floor, true);
+                for (let i = 0; i < this.currentFloorUsers.length; i++) {
+                    if (user.macAddress === this.currentFloorUsers[i].macAddress) {
+                        this.showModalUser(user, i);
+                        this.listIndex = index;
+                        break;
                     }
                 }
             },
@@ -222,6 +234,7 @@
                 if (floor != null) {
                     if (clicked) {
                         this.chosenIndex = null;
+                        this.listIndex = null;
                     }
                     this.currentFloor = floor;
                     this.imageURL = floor.imageData;

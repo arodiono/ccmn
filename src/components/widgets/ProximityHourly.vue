@@ -33,8 +33,8 @@
     props: ['params', 'interval'],
     watch: {
       params: async function () {
-        await this.getPasserby()
-        await this.getVisitors()
+        await this.getPasserby();
+        await this.getVisitors();
         await this.getConnected()
       }
     },
@@ -78,11 +78,11 @@
       getPasserby: async function () {
         await HTTP.get('/presence/v1/passerby/' + this.interval, { params: this.params })
           .then(response => {
-            this.passerby.labels.length = 0
-            this.passerby.values.length = 0
+            this.passerby.labels.length = 0;
+            this.passerby.values.length = 0;
             for (let key in response.data) {
               if (response.data.hasOwnProperty(key)) {
-                this.passerby.labels.push(key)
+                this.passerby.labels.push(key);
                 this.passerby.values.push(response.data[key])
               }
             }
@@ -91,7 +91,7 @@
       getVisitors: async function () {
         await HTTP.get('/presence/v1/visitor/' + this.interval, { params: this.params })
           .then(response => {
-            this.visitors.values.length = 0
+            this.visitors.values.length = 0;
             for (let key in response.data) {
               if (response.data.hasOwnProperty(key)) {
                 this.visitors.values.push(response.data[key])
@@ -102,7 +102,7 @@
       getConnected: async function () {
         await HTTP.get('/presence/v1/connected/' + this.interval, { params: this.params })
           .then(response => {
-            this.connected.values.length = 0
+            this.connected.values.length = 0;
             for (let key in response.data) {
               if (response.data.hasOwnProperty(key)) {
                 this.connected.values.push(response.data[key])

@@ -60,7 +60,6 @@
           }
         })
           .then(response => {
-              console.log(response.data);
             let i = 0;
             this.connectedDays = [0, 0, 0, 0, 0, 0, 0];
             for (let key in response.data) {
